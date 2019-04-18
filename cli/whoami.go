@@ -33,11 +33,11 @@ func PrintWhoami() error {
 
 	region := *GetAWSSession().Config.Region
 
-	pprint.Field("Account", *output.Account)
-	pprint.Field("   Role", *output.Arn)
+	pprint.Field(" Account", *output.Account)
+	pprint.Field("    Role", *output.Arn)
 
 	if region != "" || options.Verbose {
-		pprint.Field(" Region", region)
+		pprint.Field("  Region", region)
 	}
 
 	return nil

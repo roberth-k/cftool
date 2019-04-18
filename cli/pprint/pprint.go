@@ -3,17 +3,24 @@ package pprint
 import (
 	"fmt"
 	au "github.com/logrusorgru/aurora"
+	"os"
 )
 
-func Field(field string, value interface{}) {
-	var str string
-
+func stringize(value interface{}) string {
 	switch x := value.(type) {
 	case fmt.Stringer:
-		str = x.String()
+		return x.String()
 	case string:
-		str = x
+		return x
+	default:
+		panic("expected something stringable")
 	}
+}
 
-	fmt.Println(au.Cyan(field+": ").String() + str)
+func Field(field string, value interface{}) {
+	fmt.Println(au.Cyan(field+": ").String() + stringize(value))
+}
+
+func Errorf(format string, args ...interface{}) {
+	_, _ = fmt.Fprintf(os.Stderr, au.Red("Error! "+format+"\n").String(), args...)
 }

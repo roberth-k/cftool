@@ -26,7 +26,12 @@ func (update *UpdateCommand) Execute(args []string) error {
 		os.Exit(1)
 	}
 
+	_, err := parseAllParameters(
+		updateCommand.ParameterFiles,
+		updateCommand.Parameters)
+
 	_ = PrintWhoami()
+
 	pprint.Field("StackName", update.StackName)
 	pprint.Field("TemplateFile", update.Positional.TemplateFile)
 
@@ -49,4 +54,39 @@ func init() {
 		"Update a CloudFormation stack",
 		"Update a CloudFormation stack.",
 		&updateCommand)
+}
+
+func parseAllParameters(files []string, params []string) (map[string]string, error) {
+	result := make(map[string]string)
+
+	for _, path := range files {
+		if options.Verbose {
+			pprint.Verbosef("Reading parameters from %s...", path)
+		}
+
+		paramsFromFile, err := ParseParameterFile(path)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for k, v := range paramsFromFile {
+			if _, ok := result[k]; ok && options.Verbose {
+				pprint.Verbosef("Override parameter %s.", k)
+			}
+
+			result[k] = v
+		}
+	}
+
+	if len(updateCommand.Parameters) > 0 {
+		pprint.Verbosef("Applying command-line parameter overrides...")
+
+		for _, paramSpec := range params {
+			param := ParseParameterFromCommandLine(paramSpec)
+			result[*param.ParameterKey] = *param.ParameterValue
+		}
+	}
+
+	return result, nil
 }

@@ -24,3 +24,11 @@ func Field(field string, value interface{}) {
 func Errorf(format string, args ...interface{}) {
 	_, _ = fmt.Fprintf(os.Stderr, au.Red("Error! "+format+"\n").String(), args...)
 }
+
+func Prompt(format string, args ...interface{}) bool {
+	return false
+}
+
+func Write(format string, args ...interface{}) {
+
+}

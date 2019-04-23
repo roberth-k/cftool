@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/tetratom/cfn-tool/cli/cfn"
 	"github.com/tetratom/cfn-tool/cli/pprint"
 	"io/ioutil"
 	"os"
@@ -30,14 +31,37 @@ func (update *UpdateCommand) Execute(args []string) error {
 		updateCommand.ParameterFiles,
 		updateCommand.Parameters)
 
-	_ = PrintWhoami()
+	err = PrintWhoami()
+
+	if err != nil {
+		pprint.Errorf("Failed to get caller identity.")
+		return err
+	}
 
 	pprint.Field("StackName", update.StackName)
+
+	stackExists, err := cfn.StackExists(GetAWSSession(), update.StackName)
+
+	if err != nil {
+		pprint.Errorf("Failed to determine whether stack exists.")
+		return err
+	}
+
+	if !stackExists {
+		if !pprint.Prompt("Stack %s does not exist. Create?", update.StackName) {
+			pprint.Write("Aborted by user.")
+			os.Exit(1)
+		} else {
+
+		}
+	}
+
 	pprint.Field("TemplateFile", update.Positional.TemplateFile)
 
 	template, err := ioutil.ReadFile(update.Positional.TemplateFile)
 
 	if err != nil {
+		pprint.Errorf("Failed to read template file %s.", update.Positional.TemplateFile)
 		return err
 	}
 

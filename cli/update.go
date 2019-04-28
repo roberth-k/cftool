@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tetratom/cfn-tool/cli/cfn"
 	"github.com/tetratom/cfn-tool/cli/pprint"
+	"io/ioutil"
 	"os"
 )
 
@@ -41,7 +42,7 @@ func (prog *Program) Update(args []string) error {
 
 	update.Template = rest[0]
 
-	_, err := update.parseAllParameters()
+	parameters, err := update.parseAllParameters()
 	if err != nil {
 		return err
 	}
@@ -70,69 +71,24 @@ func (prog *Program) Update(args []string) error {
 		update.Prog.Verbosef("Creating stack %s...", update.StackName)
 	}
 
+	pprint.Verbosef("reading template %s...", update.Template)
+	template, err := ioutil.ReadFile(update.Template)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read template %s", update.Template)
+	}
+
+	pprint.Verbosef("creating change set...")
+	stackUpdate, err := cfn.CreateChangeSet(
+		update.Sess(),
+		update.StackName,
+		string(template),
+		parameters)
+	if err != nil {
+		return errors.Wrap(err, "failed to create change set")
+	}
+
 	return nil
 }
-
-//
-//func (update *UpdateCommand) Execute(args []string) error {
-//	if len(update.Positional.Rest) != 0 {
-//		pprint.Errorf("Expected exactly one template file.")
-//		os.Exit(1)
-//	}
-//
-//	_, err := parseAllParameters(
-//		updateCommand.ParameterFiles,
-//		updateCommand.Parameters)
-//
-//	err = PrintWhoami()
-//
-//	if err != nil {
-//		pprint.Errorf("Failed to get caller identity.")
-//		return err
-//	}
-//
-//	pprint.Field("StackName", update.StackName)
-//
-//	stackExists, err := cfn.StackExists(GetAWSSession(), update.StackName)
-//
-//	if err != nil {
-//		pprint.Errorf("Failed to determine whether stack exists.")
-//		return err
-//	}
-//
-//	if !stackExists {
-//		if !pprint.Prompt("Stack %s does not exist. Create?", update.StackName) {
-//			pprint.Write("Aborted by user.")
-//			os.Exit(1)
-//		} else {
-//
-//		}
-//	}
-//
-//	pprint.Field("TemplateFile", update.Positional.TemplateFile)
-//
-//	template, err := ioutil.ReadFile(update.Positional.TemplateFile)
-//
-//	if err != nil {
-//		pprint.Errorf("Failed to read template file %s.", update.Positional.TemplateFile)
-//		return err
-//	}
-//
-//	fmt.Printf("The template is: %s", string(template))
-//
-//	return nil
-//}
-//
-//var updateCommand UpdateCommand
-//
-//func init() {
-//	_, _ = parser.AddCommand(
-//		"update",
-//		"Update a CloudFormation stack",
-//		"Update a CloudFormation stack.",
-//		&updateCommand)
-//}
-//
 
 func (update *Update) parseAllParameters() (map[string]string, error) {
 	files := update.ParameterFiles

@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	cfn "github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/pborman/getopt/v2"
+	"github.com/tetratom/cfn-tool/cli/pprint"
 	"os"
 )
 
@@ -28,6 +29,8 @@ func (opts *AWSOptions) CfnClient() *cfn.CloudFormation {
 func (opts *AWSOptions) Session() *session.Session {
 	if opts.sess == nil {
 		sessOpts := session.Options{Config: aws.Config{}}
+
+		_ = os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
 
 		if opts.Profile != "" {
 			sessOpts.Profile = opts.Profile
@@ -77,8 +80,11 @@ func main() {
 	var err error
 
 	switch rest[0] {
+	case "update":
+		err = prog.Update(rest)
+
 	case "whoami":
-		err = prog.Whoami(rest[1:])
+		err = prog.Whoami(rest)
 
 	default:
 		fmt.Printf("unrecognized command: %s\n", rest[0])
@@ -91,4 +97,10 @@ func main() {
 	}
 
 	os.Exit(0)
+}
+
+func (p *Program) Verbosef(msg string, args ...interface{}) {
+	if p.Verbose {
+		pprint.Verbosef(msg, args...)
+	}
 }

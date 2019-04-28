@@ -109,8 +109,11 @@ func StackExists(sess *session.Session, stackName string) (bool, error) {
 		StackName: aws.String(stackName),
 	})
 
-	// TODO: Check error type.
 	if err != nil {
+		if strings.Contains(err.Error(), "does not exist") {
+			return false, nil
+		}
+
 		return false, err
 	}
 

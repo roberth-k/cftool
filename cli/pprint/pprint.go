@@ -22,13 +22,24 @@ func Field(field string, value interface{}) {
 }
 
 func Errorf(format string, args ...interface{}) {
-	_, _ = fmt.Fprintf(os.Stderr, au.Red("Error! "+format+"\n").String(), args...)
+	_, _ = fmt.Fprintf(os.Stderr, au.Red("Error! "+format).String()+"\n", args...)
 }
 
 func Prompt(format string, args ...interface{}) bool {
-	return false
+	fmt.Printf(format+" [y/n] ", args...)
+	var input string
+	_, _ = fmt.Scan(&input)
+	return input == "y"
 }
 
 func Write(format string, args ...interface{}) {
+	fmt.Printf(format+"\n", args...)
+}
 
+func UserErrorf(format string, args ...interface{}) {
+	_, _ = fmt.Fprintf(os.Stderr, format+"\n", args...)
+}
+
+func Verbosef(format string, args ...interface{}) {
+	_, _ = fmt.Fprintf(os.Stdout, au.Yellow("VERBOSE: "+format).String()+"\n", args...)
 }

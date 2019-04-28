@@ -10,7 +10,7 @@ import (
 
 // Whoami prints information about the caller's AWS principal.
 func (prog *Program) Whoami(args []string) error {
-	if len(args) != 0 {
+	if len(args) > 1 {
 		log.Printf("expected no additional arguments in: %s\n", strings.Join(args, " "))
 		os.Exit(1)
 	}
@@ -28,11 +28,11 @@ func (prog *Program) Whoami(args []string) error {
 		region = *regionPtr
 	}
 
-	pprint.Field(" Account", *output.Account)
-	pprint.Field("    Role", *output.Arn)
+	pprint.Field("  Account", *output.Account)
+	pprint.Field("     Role", *output.Arn)
 
 	if region != "" || prog.Verbose {
-		pprint.Field("  Region", region)
+		pprint.Field("   Region", region)
 	}
 
 	return nil

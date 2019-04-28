@@ -50,9 +50,14 @@ func ResetWriter() {
 	fp = os.Stdout
 }
 
-func Field(field string, value interface{}) {
+func StartField(field string) {
 	_, _ = cyan.Fprintf(fp, "%s:", field)
-	_, _ = fmt.Fprintln(fp, " "+stringize(value))
+	_, _ = fmt.Fprintf(fp, " ")
+}
+
+func Field(field string, value interface{}) {
+	StartField(field)
+	_, _ = fmt.Fprintln(fp, stringize(value))
 }
 
 func Errorf(format string, args ...interface{}) {
@@ -69,6 +74,10 @@ func Prompt(format string, args ...interface{}) bool {
 
 func Write(format string, args ...interface{}) {
 	_, _ = fmt.Fprintf(fp, format+"\n", args...)
+}
+
+func Printf(format string, args ...interface{}) {
+	_, _ = fmt.Fprintf(fp, format, args...)
 }
 
 func UserErrorf(format string, args ...interface{}) {
@@ -106,4 +115,12 @@ func PrintChangeHeader(action string, resourceType string, logicalResourceId str
 	_, _ = col.Fprintf(fp, "%s %s", symbol, resourceType)
 	_, _ = magenta.Fprintf(fp, " %s", logicalResourceId)
 	_, _ = fmt.Fprintln(fp)
+}
+
+func Yellowf(format string, args ...interface{}) {
+	_, _ = yellow.Fprintf(fp, format, args...)
+}
+
+func Redf(format string, args ...interface{}) {
+	_, _ = red.Fprintf(fp, format, args...)
 }

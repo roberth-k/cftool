@@ -78,7 +78,7 @@ func (prog *Program) Update(args []string) error {
 	}
 
 	pprint.Verbosef("creating change set...")
-	stackUpdate, err := cfn.CreateChangeSet(
+	_, err = cfn.CreateChangeSet(
 		update.Sess(),
 		update.StackName,
 		string(template),

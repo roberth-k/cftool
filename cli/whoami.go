@@ -3,40 +3,35 @@ package main
 import (
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/tetratom/cfn-tool/cli/pprint"
+	"log"
+	"os"
+	"strings"
 )
 
-type WhoamiCommand struct {
-}
+// Whoami prints information about the caller's AWS principal.
+func (prog *Program) Whoami(args []string) error {
+	if len(args) != 0 {
+		log.Printf("expected no additional arguments in: %s\n", strings.Join(args, " "))
+		os.Exit(1)
+	}
 
-func (command *WhoamiCommand) Execute(args []string) error {
-	return PrintWhoami()
-}
-
-var whoamiCommand WhoamiCommand
-
-func init() {
-	_, _ = parser.AddCommand(
-		"whoami",
-		"Show AWS caller identity",
-		"Show AWS caller identity based on the current credentials.",
-		&whoamiCommand)
-}
-
-// PrintWhoami prints information about the caller's AWS principal.
-func PrintWhoami() error {
-	stsClient := sts.New(GetAWSSession())
+	stsClient := sts.New(prog.AWS.Session())
 	output, err := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 
 	if err != nil {
 		return err
 	}
 
-	region := *GetAWSSession().Config.Region
+	var region string
+	regionPtr := prog.AWS.Session().Config.Region
+	if regionPtr != nil {
+		region = *regionPtr
+	}
 
 	pprint.Field(" Account", *output.Account)
 	pprint.Field("    Role", *output.Arn)
 
-	if region != "" || options.Verbose {
+	if region != "" || prog.Verbose {
 		pprint.Field("  Region", region)
 	}
 

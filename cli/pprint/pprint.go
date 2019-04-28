@@ -6,6 +6,10 @@ import (
 	"os"
 )
 
+var printfCyan = color.New(color.FgCyan).PrintfFunc()
+var fprintfRed = color.New(color.FgRed).FprintfFunc()
+var printfYellow = color.New(color.FgYellow).PrintfFunc()
+
 func stringize(value interface{}) string {
 	switch x := value.(type) {
 	case fmt.Stringer:
@@ -18,11 +22,12 @@ func stringize(value interface{}) string {
 }
 
 func Field(field string, value interface{}) {
-	fmt.Println(color.CyanString("%s: ", field) + stringize(value))
+	printfCyan("%s:", field)
+	fmt.Println(" " + stringize(value))
 }
 
 func Errorf(format string, args ...interface{}) {
-	fmt.Println(color.RedString("ERROR! "+format, args...))
+	fprintfRed(os.Stderr, "ERROR! "+format+"\n", args...)
 }
 
 func Prompt(format string, args ...interface{}) bool {
@@ -41,5 +46,5 @@ func UserErrorf(format string, args ...interface{}) {
 }
 
 func Verbosef(format string, args ...interface{}) {
-	fmt.Println(color.YellowString("VERBOSE: "+format, args...))
+	printfYellow("VERBOSE: "+format+"\n", args...)
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/tetratom/cfn-tool/cli/pprint"
 	"io/ioutil"
 	"os"
+	"time"
 )
 
 type Update struct {
@@ -24,16 +25,19 @@ func (u *Update) Sess() *session.Session {
 	return u.Prog.AWS.Session()
 }
 
-func (prog *Program) Update(args []string) error {
-	update := Update{Prog: prog}
-
+func (update *Update) ParseFlags(args []string) []string {
 	flags := getopt.New()
 	flags.FlagLong(&update.Parameters, "parameter", 'P', "explicit parameters")
 	flags.FlagLong(&update.ParameterFiles, "parameter-file", 'p', "path to parameter file")
 	flags.FlagLong(&update.Yes, "yes", 'y', "do not prompt for stack update confirmation")
 	flags.FlagLong(&update.StackName, "stack-name", 'n', "override inferrred stack name")
 	flags.Parse(args)
-	rest := flags.Args()
+	return flags.Args()
+}
+
+func (prog *Program) Update(args []string) error {
+	update := Update{Prog: prog}
+	rest := update.ParseFlags(args)
 
 	if len(rest) != 1 {
 		fmt.Printf("expected positional argument with path to template\n")
@@ -78,13 +82,55 @@ func (prog *Program) Update(args []string) error {
 	}
 
 	pprint.Verbosef("creating change set...")
-	_, err = cfn.CreateChangeSet(
+	stackUpdate, err := cfn.CreateChangeSet(
 		update.Sess(),
 		update.StackName,
 		string(template),
 		parameters)
 	if err != nil {
-		return errors.Wrap(err, "failed to create change set")
+		return errors.Wrap(err, "create change set")
+	}
+
+	pprint.Verbosef("executing change set...")
+	if err := stackUpdate.Execute(); err != nil {
+		return errors.Wrap(err, "execute stack update")
+	}
+
+	lastStatus := cfn.StackStatus("UNKNOWN")
+	pprint.Verbosef("starting terminal status wait loop...")
+
+	for i := 0; ; i++ {
+		status, err := stackUpdate.GetStatus()
+		if err != nil {
+			return errors.Wrap(err, "get stack status")
+		}
+
+		if status != lastStatus {
+			lastStatus, i = status, 0
+			pprint.Printf("\n%s", status)
+			if !status.IsTerminal() {
+				pprint.Printf("...")
+			}
+		}
+
+		if status.IsTerminal() {
+			pprint.Printf("\n")
+			break
+		}
+
+		sleepTime := 5 * time.Second
+
+		if i < 5 {
+			// Rapid updates for the first 10 seconds.
+			sleepTime = 2 * time.Second
+		}
+
+		time.Sleep(sleepTime)
+		pprint.Printf(".")
+	}
+
+	if lastStatus.IsFailed() {
+		os.Exit(1)
 	}
 
 	return nil

@@ -3,32 +3,33 @@ package cfn
 import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/cloudformation"
+	cf "github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"strings"
 )
 
 type StackStatus string
 
-const (
-	StackStatusCreateInProgress                        StackStatus = "CREATE_IN_PROGRESS"
-	StackStatusCreateFailed                            StackStatus = "CREATE_FAILED"
-	StackStatusCreateComplete                          StackStatus = "CREATE_COMPLETE"
-	StackStatusRollbackInProgress                      StackStatus = "ROLLBACK_IN_PROGRESS"
-	StackStatusRollbackFailed                          StackStatus = "ROLLBACK_FAILED"
-	StackStatusRollbackComplete                        StackStatus = "ROLLBACK_COMPLETE"
-	StackStatusDeleteInProgress                        StackStatus = "DELETE_IN_PROGRESS"
-	StackStatusDeleteFailed                            StackStatus = "DELETE_FAILED"
-	StackStatusDeleteComplete                          StackStatus = "DELETE_COMPLETE"
-	StackStatusUpdateInProgress                        StackStatus = "UPDATE_IN_PROGRESS"
-	StackStatusUpdateCompleteCleanupInProgress         StackStatus = "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS"
-	StackStatusUpdateComplete                          StackStatus = "UPDATE_COMPLETE"
-	StackStatusUpdateRollbackInProgress                StackStatus = "UPDATE_ROLLBACK_IN_PROGRESS"
-	StackStatusUpdateRollbackFailed                    StackStatus = "UPDATE_ROLLBACK_FAILED"
-	StackStatusUpdateRollbackCompleteCleanupInProgress StackStatus = "UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS"
-	StackStatusUpdateRollbackComplete                  StackStatus = "UPDATE_ROLLBACK_COMPLETE"
-	StackStatusReviewInProgress                        StackStatus = "REVIEW_IN_PROGRESS"
-)
+//const (
+//	StackStatusCreateInProgress                        StackStatus = "CREATE_IN_PROGRESS"
+//	StackStatusCreateFailed                            StackStatus = "CREATE_FAILED"
+//	StackStatusCreateComplete                          StackStatus = "CREATE_COMPLETE"
+//	StackStatusRollbackInProgress                      StackStatus = "ROLLBACK_IN_PROGRESS"
+//	StackStatusRollbackFailed                          StackStatus = "ROLLBACK_FAILED"
+//	StackStatusRollbackComplete                        StackStatus = "ROLLBACK_COMPLETE"
+//	StackStatusDeleteInProgress                        StackStatus = "DELETE_IN_PROGRESS"
+//	StackStatusDeleteFailed                            StackStatus = "DELETE_FAILED"
+//	StackStatusDeleteComplete                          StackStatus = "DELETE_COMPLETE"
+//	StackStatusUpdateInProgress                        StackStatus = "UPDATE_IN_PROGRESS"
+//	StackStatusUpdateCompleteCleanupInProgress         StackStatus = "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS"
+//	StackStatusUpdateComplete                          StackStatus = "UPDATE_COMPLETE"
+//	StackStatusUpdateRollbackInProgress                StackStatus = "UPDATE_ROLLBACK_IN_PROGRESS"
+//	StackStatusUpdateRollbackFailed                    StackStatus = "UPDATE_ROLLBACK_FAILED"
+//	StackStatusUpdateRollbackCompleteCleanupInProgress StackStatus = "UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS"
+//	StackStatusUpdateRollbackComplete                  StackStatus = "UPDATE_ROLLBACK_COMPLETE"
+//	StackStatusReviewInProgress                        StackStatus = "REVIEW_IN_PROGRESS"
+//)
 
 func (status StackStatus) IsComplete() bool {
 	return strings.HasSuffix(string(status), "_COMPLETE")
@@ -46,7 +47,7 @@ type StackUpdate struct {
 	Name    string
 	Id      string
 	StackId string
-	client  *cloudformation.CloudFormation
+	client  *cf.CloudFormation
 }
 
 func CreateChangeSet(
@@ -55,18 +56,18 @@ func CreateChangeSet(
 	templateBody string,
 	parameters map[string]string) (StackUpdate, error) {
 
-	client := cloudformation.New(sess)
+	client := cf.New(sess)
 
-	input := cloudformation.CreateChangeSetInput{
+	input := cf.CreateChangeSetInput{
 		StackName:     aws.String(stackName),
 		ChangeSetName: aws.String("StackUpdate-" + uuid.New().String()),
-		Parameters:    make([]*cloudformation.Parameter, len(parameters)),
+		Parameters:    make([]*cf.Parameter, len(parameters)),
 		TemplateBody:  aws.String(templateBody),
 	}
 
 	index := 0
 	for key, value := range parameters {
-		input.Parameters[index] = &cloudformation.Parameter{
+		input.Parameters[index] = &cf.Parameter{
 			ParameterKey:   aws.String(key),
 			ParameterValue: aws.String(value),
 		}
@@ -88,24 +89,36 @@ func CreateChangeSet(
 	}, nil
 }
 
-func (update *StackUpdate) GetStatus() StackStatus {
-	out, err := update.client.DescribeStacks(&cloudformation.DescribeStacksInput{
+func (update *StackUpdate) GetStatus() (StackStatus, error) {
+	out, err := update.client.DescribeStacks(&cf.DescribeStacksInput{
 		StackName: aws.String(update.StackId),
 	})
 
 	if err != nil {
-		panic(err)
+		return "", errors.Wrapf(err, "describe stack %s", update.StackId)
 	}
 
 	stack := out.Stacks[0]
 	status := StackStatus(*stack.StackStatus)
+	return status, nil
+}
 
-	return status
+func (update *StackUpdate) Execute() error {
+	_, err := update.client.ExecuteChangeSet(&cf.ExecuteChangeSetInput{
+		StackName:     aws.String(update.StackId),
+		ChangeSetName: aws.String(update.Name),
+	})
+
+	if err != nil {
+		return errors.Wrap(err, "execute change set")
+	}
+
+	return nil
 }
 
 func StackExists(sess *session.Session, stackName string) (bool, error) {
-	client := cloudformation.New(sess)
-	_, err := client.DescribeStacks(&cloudformation.DescribeStacksInput{
+	client := cf.New(sess)
+	_, err := client.DescribeStacks(&cf.DescribeStacksInput{
 		StackName: aws.String(stackName),
 	})
 

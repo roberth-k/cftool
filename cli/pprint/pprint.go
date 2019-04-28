@@ -27,7 +27,8 @@ func Field(field string, value interface{}) {
 }
 
 func Errorf(format string, args ...interface{}) {
-	fprintfRed(os.Stderr, "ERROR! "+format+"\n", args...)
+	fprintfRed(os.Stderr, "ERROR! "+format, args...)
+	_, _ = fmt.Fprintf(os.Stderr, "\n")
 }
 
 func Prompt(format string, args ...interface{}) bool {
@@ -46,5 +47,6 @@ func UserErrorf(format string, args ...interface{}) {
 }
 
 func Verbosef(format string, args ...interface{}) {
-	printfYellow("VERBOSE: "+format+"\n", args...)
+	printfYellow("VERBOSE: "+format, args...)
+	fmt.Printf("\n")
 }

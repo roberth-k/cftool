@@ -2,7 +2,7 @@ package pprint
 
 import (
 	"fmt"
-	au "github.com/logrusorgru/aurora"
+	"github.com/fatih/color"
 	"os"
 )
 
@@ -18,11 +18,11 @@ func stringize(value interface{}) string {
 }
 
 func Field(field string, value interface{}) {
-	fmt.Println(au.Cyan(field+": ").String() + stringize(value))
+	fmt.Println(color.CyanString("%s: ", field) + stringize(value))
 }
 
 func Errorf(format string, args ...interface{}) {
-	_, _ = fmt.Fprintf(os.Stderr, au.Red("Error! "+format).String()+"\n", args...)
+	fmt.Println(color.RedString("ERROR! "+format, args...))
 }
 
 func Prompt(format string, args ...interface{}) bool {
@@ -41,5 +41,5 @@ func UserErrorf(format string, args ...interface{}) {
 }
 
 func Verbosef(format string, args ...interface{}) {
-	_, _ = fmt.Fprintf(os.Stdout, au.Yellow("VERBOSE: "+format).String()+"\n", args...)
+	fmt.Println(color.YellowString("VERBOSE: "+format, args...))
 }

@@ -9,6 +9,8 @@ import (
 	"github.com/tetratom/cfn-tool/cli/pprint"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -18,7 +20,7 @@ type Update struct {
 	ParameterFiles []string
 	Yes            bool
 	StackName      string
-	Template       string
+	TemplateFile   string
 }
 
 func (u *Update) Sess() *session.Session {
@@ -44,7 +46,12 @@ func (prog *Program) Update(args []string) error {
 		os.Exit(1)
 	}
 
-	update.Template = rest[0]
+	update.TemplateFile = rest[0]
+
+	stackName := update.deriveStackName()
+	if stackName == "" {
+		return errors.New("stack name is required")
+	}
 
 	parameters, err := update.parseAllParameters()
 	if err != nil {
@@ -56,39 +63,66 @@ func (prog *Program) Update(args []string) error {
 		return err
 	}
 
-	pprint.Field("StackName", update.StackName)
+	pprint.Field("StackName", stackName)
 	pprint.Write("")
 
-	update.Prog.Verbosef("Finding stack %s...", update.StackName)
-	exists, err := cfn.StackExists(update.Sess(), update.StackName)
+	update.Prog.Verbosef("Finding stack %s...", stackName)
+	exists, err := cfn.StackExists(update.Sess(), stackName)
 	if err != nil {
 		return errors.Wrap(err, "check stack exists")
 	}
 
 	if !exists {
-		ok := pprint.Prompt("Stack %s does not exist. Create?", update.StackName)
+		ok := pprint.Prompt("Stack %s does not exist. Create?", stackName)
 		if !ok {
 			pprint.Write("Aborted by user.")
 			os.Exit(1)
 		}
 
-		update.Prog.Verbosef("Creating stack %s...", update.StackName)
+		update.Prog.Verbosef("Creating stack %s...", stackName)
 	}
 
-	pprint.Verbosef("reading template %s...", update.Template)
-	template, err := ioutil.ReadFile(update.Template)
+	update.Prog.Verbosef("reading template %s...", update.TemplateFile)
+	template, err := ioutil.ReadFile(update.TemplateFile)
 	if err != nil {
-		return errors.Wrapf(err, "failed to read template %s", update.Template)
+		return errors.Wrapf(err, "failed to read template %s", update.TemplateFile)
 	}
 
-	pprint.Verbosef("creating change set...")
+	if !exists {
+		update.Prog.Verbosef("creating stack %s via change set...", stackName)
+	} else {
+		update.Prog.Verbosef("updating stack %s via change set...", stackName)
+	}
+
 	stackUpdate, err := cfn.CreateChangeSet(
 		update.Sess(),
-		update.StackName,
+		stackName,
 		string(template),
-		parameters)
+		parameters,
+		!exists)
 	if err != nil {
 		return errors.Wrap(err, "create change set")
+	}
+
+	update.Prog.Verbosef("describing change set %s...", stackUpdate.Name)
+	describe, err := stackUpdate.Describe()
+	if err != nil {
+		return err
+	}
+
+	update.Prog.Verbosef("%+v", *describe)
+
+	PPrintChangeSet(describe)
+
+	if !update.Yes {
+		pprint.Write("")
+		ok := pprint.Prompt("Execute change set?")
+		if !ok {
+			pprint.Write("Aborted by user.")
+			os.Exit(1)
+		}
+	} else {
+		update.Prog.Verbosef("proceeding automatically (--yes)")
 	}
 
 	pprint.Verbosef("executing change set...")
@@ -134,6 +168,27 @@ func (prog *Program) Update(args []string) error {
 	}
 
 	return nil
+}
+
+func (update *Update) deriveStackName() string {
+	if update.StackName != "" {
+		return update.StackName
+	}
+
+	getNameWithoutExtension := func(name string) string {
+		basename := filepath.Base(name)
+		noext := strings.Split(basename, ".")
+		return noext[0]
+	}
+
+	for _, path := range update.ParameterFiles {
+		name := getNameWithoutExtension(path)
+		if name != "" {
+			return name
+		}
+	}
+
+	return getNameWithoutExtension(update.TemplateFile)
 }
 
 func (update *Update) parseAllParameters() (map[string]string, error) {

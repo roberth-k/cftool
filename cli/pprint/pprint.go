@@ -6,6 +6,7 @@ import (
 	"github.com/fatih/color"
 	"io"
 	"os"
+	"strings"
 )
 
 var cyan = color.New(color.FgCyan)
@@ -85,7 +86,9 @@ func UserErrorf(format string, args ...interface{}) {
 }
 
 func Verbosef(format string, args ...interface{}) {
-	_, _ = yellow.Fprintf(fp, "VERBOSE: "+format, args...)
+	str := fmt.Sprintf(format, args...)
+	str = "VERBOSE: " + strings.Replace(str, "\n", "\nVERBOSE: ", -1)
+	_, _ = yellow.Fprintf(fp, str)
 	_, _ = fmt.Fprintf(fp, "\n")
 }
 

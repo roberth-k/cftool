@@ -6,9 +6,11 @@ import (
 )
 
 func PPrintChangeSet(cs *cf.DescribeChangeSetOutput) {
-	for _, change := range cs.Changes {
-		// Spacing
-		pprint.Write("")
+	for i, change := range cs.Changes {
+		if i > 0 {
+			// Spacing
+			pprint.Write("")
+		}
 
 		if *change.Type != cf.ChangeTypeResource {
 			pprint.Warningf("skipping unknown resource type: %s", *change.Type)
@@ -16,9 +18,10 @@ func PPrintChangeSet(cs *cf.DescribeChangeSetOutput) {
 		}
 
 		change := change.ResourceChange
+		replacement := str(change.Replacement)
 
 		// Display change type. Replacements show up as a remove-and-add.
-		if *change.Replacement == cf.ReplacementTrue {
+		if replacement == cf.ReplacementTrue {
 			pprint.PrintChangeHeader(
 				cf.ChangeActionRemove,
 				*change.ResourceType,

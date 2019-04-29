@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"strings"
+	"time"
 )
 
 type StackStatus string
@@ -44,25 +45,38 @@ func (status StackStatus) IsTerminal() bool {
 }
 
 type StackUpdate struct {
-	Name    string
-	Id      string
-	StackId string
-	client  *cf.CloudFormation
+	Name      string
+	StackName string
+	Id        string
+	StackId   string
+	client    *cf.CloudFormation
 }
 
 func CreateChangeSet(
 	sess *session.Session,
 	stackName string,
 	templateBody string,
-	parameters map[string]string) (StackUpdate, error) {
+	parameters map[string]string,
+	create bool,
+) (*StackUpdate, error) {
 
 	client := cf.New(sess)
+
+	changeSetType := cf.ChangeSetTypeUpdate
+	if create {
+		changeSetType = cf.ChangeSetTypeCreate
+	}
 
 	input := cf.CreateChangeSetInput{
 		StackName:     aws.String(stackName),
 		ChangeSetName: aws.String("StackUpdate-" + uuid.New().String()),
 		Parameters:    make([]*cf.Parameter, len(parameters)),
 		TemplateBody:  aws.String(templateBody),
+		ChangeSetType: aws.String(changeSetType),
+		Capabilities: []*string{
+			aws.String("CAPABILITY_IAM"),
+			aws.String("CAPABILITY_NAMED_IAM"),
+		},
 	}
 
 	index := 0
@@ -76,17 +90,53 @@ func CreateChangeSet(
 	}
 
 	out, err := client.CreateChangeSet(&input)
-
 	if err != nil {
-		return StackUpdate{}, err
+		return nil, err
 	}
 
-	return StackUpdate{
-		Name:    *input.ChangeSetName,
-		Id:      *out.Id,
-		StackId: *out.StackId,
-		client:  client,
-	}, nil
+	update := StackUpdate{
+		Name:      *input.ChangeSetName,
+		StackName: *input.StackName,
+		Id:        *out.Id,
+		StackId:   *out.StackId,
+		client:    client,
+	}
+
+	for done := false; !done; {
+		status, err := update.Describe()
+		if err != nil {
+			return nil, errors.Wrap(err, "describe change set")
+		}
+
+		switch *status.Status {
+		case cf.ChangeSetStatusCreateComplete:
+			done = true
+
+		case cf.ChangeSetStatusFailed:
+			return nil, errors.Errorf(
+				"failed to create change set: %s", *status.StatusReason)
+
+		case cf.ChangeSetStatusDeleteComplete:
+			return nil, errors.New("change set removed unexpectedly")
+
+		default:
+			time.Sleep(2 * time.Second)
+		}
+	}
+
+	return &update, nil
+}
+
+func (update *StackUpdate) Describe() (*cf.DescribeChangeSetOutput, error) {
+	out, err := update.client.DescribeChangeSet(
+		&cf.DescribeChangeSetInput{
+			StackName:     aws.String(update.StackName),
+			ChangeSetName: aws.String(update.Name)})
+	if err != nil {
+		return nil, errors.Wrap(err, "describe change set")
+	}
+
+	return out, nil
 }
 
 func (update *StackUpdate) GetStatus() (StackStatus, error) {
@@ -118,7 +168,7 @@ func (update *StackUpdate) Execute() error {
 
 func StackExists(sess *session.Session, stackName string) (bool, error) {
 	client := cf.New(sess)
-	_, err := client.DescribeStacks(&cf.DescribeStacksInput{
+	stack, err := client.DescribeStacks(&cf.DescribeStacksInput{
 		StackName: aws.String(stackName),
 	})
 
@@ -128,6 +178,12 @@ func StackExists(sess *session.Session, stackName string) (bool, error) {
 		}
 
 		return false, err
+	}
+
+	if len(stack.Stacks) > 0 {
+		if *stack.Stacks[0].StackStatus == cf.StackStatusReviewInProgress {
+			return false, nil
+		}
 	}
 
 	return true, nil

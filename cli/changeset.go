@@ -1,7 +1,9 @@
 package main
 
 import (
+	"github.com/aws/aws-sdk-go/aws/session"
 	cf "github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/tetratom/cfn-tool/cli/pprint"
 )
 
@@ -145,4 +147,15 @@ func PPrintStackOutputs(outputs []*cf.Output) {
 	for _, output := range outputs {
 		pprint.Field(*output.OutputKey, *output.OutputValue)
 	}
+}
+
+func PPrintWhoami(sess *session.Session, identity *sts.GetCallerIdentityOutput) {
+	region := "???"
+	if sess.Config.Region != nil {
+		region = *sess.Config.Region
+	}
+
+	pprint.Field("  Account", *identity.Account)
+	pprint.Field("     Role", *identity.Arn)
+	pprint.Field("   Region", region)
 }

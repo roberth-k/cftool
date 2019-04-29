@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/tetratom/cfn-tool/cli/pprint"
 	"log"
 	"os"
 	"strings"
@@ -16,24 +15,12 @@ func (prog *Program) Whoami(args []string) error {
 	}
 
 	stsClient := sts.New(prog.AWS.Session())
-	output, err := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
-
+	identity, err := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
 		return err
 	}
 
-	var region string
-	regionPtr := prog.AWS.Session().Config.Region
-	if regionPtr != nil {
-		region = *regionPtr
-	}
-
-	pprint.Field("  Account", *output.Account)
-	pprint.Field("     Role", *output.Arn)
-
-	if region != "" || prog.Verbose {
-		pprint.Field("   Region", region)
-	}
+	PPrintWhoami(prog.AWS.Session(), identity)
 
 	return nil
 }

@@ -31,7 +31,7 @@ func (update *Update) ParseFlags(args []string) []string {
 	flags := getopt.New()
 	flags.FlagLong(&update.Parameters, "parameter", 'P', "explicit parameters")
 	flags.FlagLong(&update.ParameterFiles, "parameter-file", 'p', "path to parameter file")
-	flags.FlagLong(&update.Yes, "yes", 'y', "do not prompt for stack update confirmation")
+	flags.FlagLong(&update.Yes, "yes", 'y', "do not prompt for update confirmation (if a stack already exists)")
 	flags.FlagLong(&update.StackName, "stack-name", 'n', "override inferrred stack name")
 	flags.Parse(args)
 	return flags.Args()
@@ -142,6 +142,7 @@ func (prog *Program) Update(args []string) error {
 		}
 
 		if status != lastStatus {
+			pprint.Printf("\n")
 			t := time.Now()
 			events, err := stackUpdate.GetEvents(eventsSince, t)
 			eventsSince = t
@@ -156,7 +157,7 @@ func (prog *Program) Update(args []string) error {
 			}
 
 			lastStatus, i = status, 0
-			pprint.Printf("\n%s", status)
+			pprint.Printf("%s", status)
 			if !status.IsTerminal() {
 				pprint.Printf("...")
 			}

@@ -14,8 +14,7 @@ func (prog *Program) Whoami(args []string) error {
 		os.Exit(1)
 	}
 
-	stsClient := sts.New(prog.AWS.Session())
-	identity, err := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	identity, err := prog.getWhoami()
 	if err != nil {
 		return err
 	}
@@ -23,4 +22,14 @@ func (prog *Program) Whoami(args []string) error {
 	PPrintWhoami(prog.AWS.Session(), identity)
 
 	return nil
+}
+
+func (prog *Program) getWhoami() (*sts.GetCallerIdentityOutput, error) {
+	client := sts.New(prog.AWS.Session())
+	identity, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	return identity, nil
 }

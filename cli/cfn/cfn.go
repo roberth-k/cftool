@@ -12,26 +12,6 @@ import (
 
 type StackStatus string
 
-//const (
-//	StackStatusCreateInProgress                        StackStatus = "CREATE_IN_PROGRESS"
-//	StackStatusCreateFailed                            StackStatus = "CREATE_FAILED"
-//	StackStatusCreateComplete                          StackStatus = "CREATE_COMPLETE"
-//	StackStatusRollbackInProgress                      StackStatus = "ROLLBACK_IN_PROGRESS"
-//	StackStatusRollbackFailed                          StackStatus = "ROLLBACK_FAILED"
-//	StackStatusRollbackComplete                        StackStatus = "ROLLBACK_COMPLETE"
-//	StackStatusDeleteInProgress                        StackStatus = "DELETE_IN_PROGRESS"
-//	StackStatusDeleteFailed                            StackStatus = "DELETE_FAILED"
-//	StackStatusDeleteComplete                          StackStatus = "DELETE_COMPLETE"
-//	StackStatusUpdateInProgress                        StackStatus = "UPDATE_IN_PROGRESS"
-//	StackStatusUpdateCompleteCleanupInProgress         StackStatus = "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS"
-//	StackStatusUpdateComplete                          StackStatus = "UPDATE_COMPLETE"
-//	StackStatusUpdateRollbackInProgress                StackStatus = "UPDATE_ROLLBACK_IN_PROGRESS"
-//	StackStatusUpdateRollbackFailed                    StackStatus = "UPDATE_ROLLBACK_FAILED"
-//	StackStatusUpdateRollbackCompleteCleanupInProgress StackStatus = "UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS"
-//	StackStatusUpdateRollbackComplete                  StackStatus = "UPDATE_ROLLBACK_COMPLETE"
-//	StackStatusReviewInProgress                        StackStatus = "REVIEW_IN_PROGRESS"
-//)
-
 func (status StackStatus) IsComplete() bool {
 	return strings.HasSuffix(string(status), "_COMPLETE")
 }
@@ -103,6 +83,10 @@ func CreateChangeSet(
 	}
 
 	for done := false; !done; {
+		// It's probably not going to be ready immediately anyway, so let's wait
+		// at the start of the loop.
+		time.Sleep(2 * time.Second)
+
 		status, err := update.DescribeChangeSet()
 		if err != nil {
 			return nil, errors.Wrap(err, "describe change set")
@@ -118,9 +102,6 @@ func CreateChangeSet(
 
 		case cf.ChangeSetStatusDeleteComplete:
 			return nil, errors.New("change set removed unexpectedly")
-
-		default:
-			time.Sleep(2 * time.Second)
 		}
 	}
 

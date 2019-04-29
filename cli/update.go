@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/pborman/getopt/v2"
 	"github.com/pkg/errors"
 	"github.com/tetratom/cfn-tool/cli/cfn"
@@ -58,19 +59,51 @@ func (prog *Program) Update(args []string) error {
 		return err
 	}
 
-	err = prog.Whoami([]string{})
-	if err != nil {
-		return err
+	stackExistsOut := make(chan bool, 1)
+	stackExistsErr := make(chan error, 1)
+	getWhoamiOut := make(chan *sts.GetCallerIdentityOutput, 1)
+	getWhoamiErr := make(chan error, 1)
+
+	go func() {
+		update.Prog.Verbosef("getting whoami...")
+		identity, err := prog.getWhoami()
+		if err != nil {
+			getWhoamiErr <- err
+		} else {
+			getWhoamiOut <- identity
+		}
+
+		close(getWhoamiOut)
+		close(getWhoamiErr)
+	}()
+
+	go func() {
+		update.Prog.Verbosef("finding stack %s...", stackName)
+		exists, err := cfn.StackExists(update.Sess(), stackName)
+		if err != nil {
+			stackExistsErr <- err
+		} else {
+			stackExistsOut <- exists
+		}
+
+		close(stackExistsOut)
+		close(stackExistsErr)
+	}()
+
+	if err, ok := <-getWhoamiErr; ok {
+		return errors.Wrap(err, "get whoami")
 	}
+
+	PPrintWhoami(update.Sess(), <-getWhoamiOut)
 
 	pprint.Field("StackName", stackName)
 	pprint.Write("")
 
-	update.Prog.Verbosef("Finding stack %s...", stackName)
-	exists, err := cfn.StackExists(update.Sess(), stackName)
-	if err != nil {
+	if err, ok := <-stackExistsErr; ok {
 		return errors.Wrap(err, "check stack exists")
 	}
+
+	exists := <-stackExistsOut
 
 	if !exists {
 		ok := pprint.Prompt("Stack %s does not exist. Create?", stackName)

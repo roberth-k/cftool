@@ -105,7 +105,7 @@ func (prog *Program) Update(args []string) error {
 	}
 
 	update.Prog.Verbosef("describing change set %s...", stackUpdate.Name)
-	describe, err := stackUpdate.Describe()
+	describe, err := stackUpdate.DescribeChangeSet()
 	if err != nil {
 		return err
 	}
@@ -125,13 +125,15 @@ func (prog *Program) Update(args []string) error {
 		update.Prog.Verbosef("proceeding automatically (--yes)")
 	}
 
-	pprint.Verbosef("executing change set...")
+	eventsSince := time.Now()
+
+	update.Prog.Verbosef("executing change set...")
 	if err := stackUpdate.Execute(); err != nil {
 		return errors.Wrap(err, "execute stack update")
 	}
 
 	lastStatus := cfn.StackStatus("UNKNOWN")
-	pprint.Verbosef("starting terminal status wait loop...")
+	update.Prog.Verbosef("starting terminal status wait loop...")
 
 	for i := 0; ; i++ {
 		status, err := stackUpdate.GetStatus()
@@ -140,6 +142,19 @@ func (prog *Program) Update(args []string) error {
 		}
 
 		if status != lastStatus {
+			t := time.Now()
+			events, err := stackUpdate.GetEvents(eventsSince, t)
+			eventsSince = t
+			if err != nil {
+				return errors.Wrap(err, "get stack events")
+			}
+
+			for _, event := range events {
+				if strings.HasSuffix(*event.ResourceStatus, "_FAILED") {
+					PPrintStackEvent(event)
+				}
+			}
+
 			lastStatus, i = status, 0
 			pprint.Printf("\n%s", status)
 			if !status.IsTerminal() {
@@ -165,6 +180,16 @@ func (prog *Program) Update(args []string) error {
 
 	if lastStatus.IsFailed() {
 		os.Exit(1)
+	}
+
+	outputs, err := stackUpdate.GetOutputs()
+	if err != nil {
+		return errors.Wrap(err, "get stack outputs")
+	}
+
+	if len(outputs) > 0 {
+		pprint.Write("")
+		PPrintStackOutputs(outputs)
 	}
 
 	return nil

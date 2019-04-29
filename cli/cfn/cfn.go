@@ -103,7 +103,7 @@ func CreateChangeSet(
 	}
 
 	for done := false; !done; {
-		status, err := update.Describe()
+		status, err := update.DescribeChangeSet()
 		if err != nil {
 			return nil, errors.Wrap(err, "describe change set")
 		}
@@ -127,7 +127,7 @@ func CreateChangeSet(
 	return &update, nil
 }
 
-func (update *StackUpdate) Describe() (*cf.DescribeChangeSetOutput, error) {
+func (update *StackUpdate) DescribeChangeSet() (*cf.DescribeChangeSetOutput, error) {
 	out, err := update.client.DescribeChangeSet(
 		&cf.DescribeChangeSetInput{
 			StackName:     aws.String(update.StackName),
@@ -137,6 +137,21 @@ func (update *StackUpdate) Describe() (*cf.DescribeChangeSetOutput, error) {
 	}
 
 	return out, nil
+}
+
+func (update *StackUpdate) DescribeStack() (*cf.Stack, error) {
+	out, err := update.client.DescribeStacks(
+		&cf.DescribeStacksInput{
+			StackName: aws.String(update.StackName)})
+	if err != nil {
+		return nil, errors.Wrap(err, "describe stack")
+	}
+
+	if len(out.Stacks) != 1 {
+		return nil, errors.New("expected to find exactly one stack")
+	}
+
+	return out.Stacks[0], nil
 }
 
 func (update *StackUpdate) GetStatus() (StackStatus, error) {
@@ -187,4 +202,37 @@ func StackExists(sess *session.Session, stackName string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (update *StackUpdate) GetEvents(
+	since time.Time,
+	until time.Time,
+) ([]*cf.StackEvent, error) {
+	out, err := update.client.DescribeStackEvents(
+		&cf.DescribeStackEventsInput{
+			StackName: aws.String(update.StackName),
+		})
+	if err != nil {
+		return nil, errors.Wrap(err, "describe stack events")
+	}
+
+	result := make([]*cf.StackEvent, 0, len(out.StackEvents))
+	for _, event := range out.StackEvents {
+		if (event.Timestamp.After(since) || event.Timestamp.Equal(since)) &&
+			event.Timestamp.Before(until) {
+
+			result = append(result, event)
+		}
+	}
+
+	return result, nil
+}
+
+func (update *StackUpdate) GetOutputs() ([]*cf.Output, error) {
+	stack, err := update.DescribeStack()
+	if err != nil {
+		return nil, errors.Wrap(err, "describe stack")
+	}
+
+	return stack.Outputs, nil
 }

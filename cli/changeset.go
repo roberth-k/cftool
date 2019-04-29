@@ -18,7 +18,7 @@ func PPrintChangeSet(cs *cf.DescribeChangeSetOutput) {
 		}
 
 		change := change.ResourceChange
-		replacement := str(change.Replacement)
+		replacement := str(change.Replacement, "")
 
 		// Display change type. Replacements show up as a remove-and-add.
 		if replacement == cf.ReplacementTrue {
@@ -39,7 +39,7 @@ func PPrintChangeSet(cs *cf.DescribeChangeSetOutput) {
 
 		// The physical ID is just a line.
 		if change.PhysicalResourceId != nil {
-			pprint.Printf("%s\n", *change.PhysicalResourceId)
+			pprint.Field(" Resource", *change.PhysicalResourceId)
 		}
 
 		for _, detail := range change.Details {
@@ -48,23 +48,23 @@ func PPrintChangeSet(cs *cf.DescribeChangeSetOutput) {
 	}
 }
 
-func str(s *string) string {
+func str(s *string, def string) string {
 	if s == nil {
-		return ""
+		return def
 	}
 
 	return *s
 }
 
 func PPrintChangeSetDetail(detail *cf.ResourceChangeDetail) {
-	changeSource := str(detail.ChangeSource)
-	targetAttribute := str(detail.Target.Attribute)
-	targetPropertyName := str(detail.Target.Name)
-	targetRequiresRecreation := str(detail.Target.RequiresRecreation)
-	evaluation := str(detail.Evaluation)
-	causingEntity := str(detail.CausingEntity)
+	changeSource := str(detail.ChangeSource, "")
+	targetAttribute := str(detail.Target.Attribute, "")
+	targetPropertyName := str(detail.Target.Name, "")
+	targetRequiresRecreation := str(detail.Target.RequiresRecreation, "")
+	evaluation := str(detail.Evaluation, "")
+	causingEntity := str(detail.CausingEntity, "")
 
-	pprint.StartField("    Change")
+	pprint.StartField("   Change")
 
 	pprint.Printf(targetAttribute)
 	if targetPropertyName != "" {
@@ -133,4 +133,16 @@ func PPrintChangeSetDetail(detail *cf.ResourceChangeDetail) {
 	}
 
 	pprint.Printf("\n")
+}
+
+func PPrintStackEvent(event *cf.StackEvent) {
+	pprint.Redf("Error! %s", *event.ResourceType)
+	pprint.Magentaf(" %s", *event.LogicalResourceId)
+	pprint.Printf(": %s\n", str(event.ResourceStatusReason, "???"))
+}
+
+func PPrintStackOutputs(outputs []*cf.Output) {
+	for _, output := range outputs {
+		pprint.Field(*output.OutputKey, *output.OutputValue)
+	}
 }

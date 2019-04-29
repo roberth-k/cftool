@@ -127,3 +127,7 @@ func Yellowf(format string, args ...interface{}) {
 func Redf(format string, args ...interface{}) {
 	_, _ = red.Fprintf(fp, format, args...)
 }
+
+func Magentaf(format string, args ...interface{}) {
+	_, _ = magenta.Fprintf(fp, format, args...)
+}

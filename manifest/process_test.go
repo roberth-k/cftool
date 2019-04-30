@@ -66,6 +66,7 @@ func TestManifest_Process(t *testing.T) {
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			f, err := os.Open(test.File)
+			defer f.Close()
 			require.NoError(t, err)
 			m, err := Parse(f)
 			require.NoError(t, err)

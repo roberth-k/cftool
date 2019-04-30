@@ -23,6 +23,7 @@ type Global struct {
 
 type Tenant struct {
 	Name    string
+	Label   string
 	Default *Deployment
 	Tags    map[string]string
 }
@@ -152,7 +153,6 @@ type Template struct {
 	Tags       map[string]string
 	Tenant     *Tenant
 	Deployment *Deployment
-	template   *template.Template
 }
 
 func NewTemplate() *Template {

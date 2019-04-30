@@ -2,11 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/ghodss/yaml"
 	"github.com/pborman/getopt/v2"
 	"github.com/pkg/errors"
 	"github.com/tetratom/cfn-tool/manifest"
-	"io/ioutil"
 	"os"
 )
 
@@ -14,12 +12,16 @@ type Deploy struct {
 	Prog         *Program
 	Yes          bool
 	ManifestFile string
+	Stack        string
+	Tenant       string
 }
 
 func (d *Deploy) ParseArgs(args []string) []string {
 	flags := getopt.New()
 	flags.FlagLong(&d.Yes, "yes", 'y', "do not prompt for confirmation")
 	flags.FlagLong(&d.ManifestFile, "tool-file", 'f', "tool file path")
+	flags.FlagLong(&d.Stack, "stack", 's', "stack to deploy")
+	flags.FlagLong(&d.Tenant, "tenant", 't', "tenant to deploy for")
 	flags.Parse(args)
 	rest := flags.Args()
 
@@ -35,30 +37,24 @@ func (prog *Program) Deploy(args []string) error {
 	d := Deploy{}
 	d.ParseArgs(args)
 
-	m, err := d.parseManifest()
+	fp, err := os.Open(d.ManifestFile)
+	if err != nil {
+		return errors.Wrapf(err, "open %s", d.ManifestFile)
+	}
+
+	m, err := manifest.Parse(fp)
+	fp.Close()
 	if err != nil {
 		return errors.Wrap(err, "parse manifest")
 	}
 
-	if m.Version != manifest.Version1_0 {
-		return errors.Errorf("expected manifest version %s", manifest.Version1_0)
+	decisions, err := m.Process(manifest.ProcessInput{
+		Stack:  d.Stack,
+		Tenant: d.Tenant})
+	if err != nil {
+		return errors.Wrap(err, "process manifest")
 	}
 
-	fmt.Printf("%+v\n", *m)
+	fmt.Printf("%+v\n", decisions)
 	return nil
-}
-
-func (d *Deploy) parseManifest() (*manifest.Manifest, error) {
-	data, err := ioutil.ReadFile(d.ManifestFile)
-	if err != nil {
-		return nil, errors.Wrap(err, "read manifest file")
-	}
-
-	var m manifest.Manifest
-	err = yaml.Unmarshal(data, &m)
-	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal manifest")
-	}
-
-	return &m, nil
 }

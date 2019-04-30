@@ -101,7 +101,9 @@ func (m *Manifest) Process(input ProcessInput) ([]*Decision, error) {
 			tenant.Name)
 	}
 
-	deployment := *tenant.Default
+	var deployment Deployment
+	deployment.MergeFrom(m.Global.Default)
+	deployment.MergeFrom(tenant.Default)
 	deployment.MergeFrom(stack.Default)
 	deployment.MergeFrom(stackDeployment.Override)
 

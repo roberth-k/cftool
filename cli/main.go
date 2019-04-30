@@ -80,6 +80,9 @@ func main() {
 	var err error
 
 	switch rest[0] {
+	case "deploy":
+		err = prog.Deploy(rest)
+
 	case "update":
 		err = prog.Update(rest)
 
@@ -92,7 +95,7 @@ func main() {
 	}
 
 	if err != nil {
-		fmt.Printf("error: %s\n", err)
+		fmt.Printf("error: %s\n", err) // TODO: %+v
 		os.Exit(1)
 	}
 

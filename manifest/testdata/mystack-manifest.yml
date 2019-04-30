@@ -1,0 +1,45 @@
+Version: "1.0"
+
+Global:
+  Constants:
+    LiveAccountId: "111111111111"
+    TestAccountId: "222222222222"
+
+Tenants:
+  - Name: live
+    Default:
+      Region: eu-west-1
+      AccountId: "{{.Constants.LiveAccountId}}"
+      Protected: true
+    Tags:
+      Env: live
+  - Name: live-us
+    Default:
+      Region: us-west-1
+      AccountId: "{{.Constants.LiveAccountId}}"
+      Protected: true
+    Tags:
+      Env: live
+  - Name: test
+    Default:
+      Region: eu-west-1
+      AccountId: "{{.Constants.TestAccountId}}"
+    Tags:
+      Env: test
+
+Stacks:
+  - Name: mystack
+    Label: My Stack
+    Default:
+      Template: templates/mystack.yml
+      Parameters:
+        - File: "stacks/{{.Tags.Env}}/{{.Deployment.Region}}/{{.Deployment.StackName}}.json"
+        - Key: Environment
+          Value: "{{.Tags.Env}}"
+      StackName: "{{.Tags.Env}}-mystack"
+    Targets:
+      - Tenant: live
+      - Tenant: live-us
+        Override:
+          StackName: "{{.Tags.Env}}-mystack-us"
+      - Tenant: test

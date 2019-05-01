@@ -8,16 +8,12 @@ import (
 )
 
 func TestSmoke(t *testing.T) {
-	DisableColor()
-	defer EnableColor()
-
-	b := strings.Builder{}
-	SetWriter(&b)
+	w := &strings.Builder{}
 
 	t.Run("Field", func(t *testing.T) {
-		b.Reset()
-		Field("  Greetings", "programs!")
-		require.Equal(t, "  Greetings: programs!\n", b.String())
+		w.Reset()
+		Field(w, "  Greetings", "programs!")
+		require.Equal(t, "  Greetings: programs!\n", w.String())
 	})
 
 	changeActionTests := []struct {
@@ -31,9 +27,9 @@ func TestSmoke(t *testing.T) {
 
 	for _, test := range changeActionTests {
 		t.Run("PrintChangeHeader: "+test.Action, func(t *testing.T) {
-			b.Reset()
-			PrintChangeHeader(test.Action, "AWS::Resource", "MyResource")
-			require.Equal(t, test.Symbol+" AWS::Resource MyResource\n", b.String())
+			w.Reset()
+			ChangeHeader(w, test.Action, "AWS::Resource", "MyResource")
+			require.Equal(t, test.Symbol+" AWS::Resource MyResource\n", w.String())
 		})
 	}
 }

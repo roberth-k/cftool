@@ -1,19 +1,15 @@
-package main
+package pprint
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
 	cf "github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/stretchr/testify/require"
-	"github.com/tetratom/cfn-tool/cli/pprint"
 	"strings"
 	"testing"
 )
 
 func TestPPrintChangeSet(t *testing.T) {
-	pprint.DisableColor()
-	defer pprint.EnableColor()
-	b := strings.Builder{}
-	pprint.SetWriter(&b)
+	w := &strings.Builder{}
 
 	tests := []struct {
 		ChangeSet cf.DescribeChangeSetOutput
@@ -64,24 +60,23 @@ func TestPPrintChangeSet(t *testing.T) {
 					},
 				},
 			},
-			`
-+ AWS::Resource MyResource
+			`+ AWS::Resource MyResource
 
 ~ AWS::ModifiedResource MyResource
     Change: MyAtt.MyProperty <- !GetAtt MyProp (conditional replacement)
 
 - AWS::ReplacedResource MyResource
 + AWS::ReplacedResource MyResource
-PhysicalId
+  Resource: PhysicalId
 `,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			b.Reset()
-			PPrintChangeSet(&test.ChangeSet)
-			require.Equal(t, test.Expect, b.String())
+			w.Reset()
+			ChangeSet(w, &test.ChangeSet)
+			require.Equal(t, test.Expect, w.String())
 		})
 	}
 }

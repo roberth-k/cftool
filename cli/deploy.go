@@ -5,8 +5,11 @@ import (
 	"github.com/pborman/getopt/v2"
 	"github.com/pkg/errors"
 	"github.com/tetratom/cfn-tool/cli/internal"
+	"github.com/tetratom/cfn-tool/cli/pprint"
 	"github.com/tetratom/cfn-tool/manifest"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -16,6 +19,20 @@ type Deploy struct {
 	ManifestFile string
 	Stack        string
 	Tenant       string
+}
+
+func fileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (d *Deploy) ParseArgs(args []string) []string {
@@ -34,7 +51,28 @@ func (d *Deploy) ParseArgs(args []string) []string {
 
 	if d.ManifestFile == "" {
 		d.ManifestFile = ".cfn-tool.yml"
+
+		for {
+			ok, err := fileExists(d.ManifestFile)
+			if err != nil {
+				fmt.Printf("%s\n", errors.Wrapf(err, "check %s", d.ManifestFile))
+				os.Exit(1)
+			}
+
+			if ok {
+				break
+			}
+
+			d.ManifestFile = path.Join("..", d.ManifestFile)
+			abspath, _ := filepath.Abs(d.ManifestFile)
+			if filepath.Dir(abspath) == "/" {
+				fmt.Printf("unable to find .cfn-tool.yml\n")
+				os.Exit(1)
+			}
+		}
 	}
+
+	d.ManifestFile = strings.TrimSpace(d.ManifestFile)
 
 	if strings.HasPrefix(d.ManifestFile, "~/") {
 		homedir, err := os.UserHomeDir()
@@ -46,7 +84,7 @@ func (d *Deploy) ParseArgs(args []string) []string {
 		d.ManifestFile = homedir + d.ManifestFile[1:]
 	}
 
-	if _, err := os.Stat(d.ManifestFile); os.IsNotExist(err) {
+	if ok, _ := fileExists(d.ManifestFile); !ok {
 		fmt.Printf("%s does not exist\n", d.ManifestFile)
 		os.Exit(1)
 	}
@@ -58,6 +96,8 @@ func (prog *Program) Deploy(args []string) error {
 	d := Deploy{}
 	d.ParseArgs(args)
 
+	pprint.Field(os.Stdout, "Manifest", d.ManifestFile)
+
 	fp, err := os.Open(d.ManifestFile)
 	if err != nil {
 		return errors.Wrapf(err, "open %s", d.ManifestFile)
@@ -67,6 +107,11 @@ func (prog *Program) Deploy(args []string) error {
 	fp.Close()
 	if err != nil {
 		return errors.Wrap(err, "parse manifest")
+	}
+
+	err = os.Chdir(filepath.Dir(d.ManifestFile))
+	if err != nil {
+		return errors.Wrap(err, "chdir")
 	}
 
 	decisions, err := m.Process(manifest.ProcessInput{
@@ -84,8 +129,8 @@ func (prog *Program) Deploy(args []string) error {
 	engine := internal.NewEngine(prog.AWS.Session())
 
 	for _, decision := range decisions {
-		if d.Yes && !decision.Protected {
-			decision.Protected = false
+		if !decision.Protected && !d.Yes {
+			decision.Protected = true
 		}
 
 		err = engine.Deploy(os.Stdout, decision)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/tetratom/cfn-tool/cli/pprint"
 	"log"
 	"os"
 	"strings"
@@ -14,13 +15,12 @@ func (prog *Program) Whoami(args []string) error {
 		os.Exit(1)
 	}
 
-	identity, err := prog.getWhoami()
+	id, err := prog.getWhoami()
 	if err != nil {
 		return err
 	}
 
-	PPrintWhoami(prog.AWS.Session(), identity)
-
+	pprint.Whoami(os.Stdout, prog.AWS.Session().Config.Region, id)
 	return nil
 }
 

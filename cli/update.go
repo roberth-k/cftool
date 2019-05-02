@@ -1,18 +1,15 @@
 package main
 
 import (
-	"fmt"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/pborman/getopt/v2"
 	"github.com/pkg/errors"
-	"github.com/tetratom/cfn-tool/cli/cfn"
-	"github.com/tetratom/cfn-tool/cli/pprint"
+	"github.com/tetratom/cfn-tool/cli/internal"
+	"github.com/tetratom/cfn-tool/manifest"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 type Update struct {
@@ -28,26 +25,28 @@ func (u *Update) Sess() *session.Session {
 	return u.Prog.AWS.Session()
 }
 
-func (update *Update) ParseFlags(args []string) []string {
+func (update *Update) ParseFlags(args []string) error {
 	flags := getopt.New()
 	flags.FlagLong(&update.Parameters, "parameter", 'P', "explicit parameters")
 	flags.FlagLong(&update.ParameterFiles, "parameter-file", 'p', "path to parameter file")
 	flags.FlagLong(&update.Yes, "yes", 'y', "do not prompt for update confirmation (if a stack already exists)")
 	flags.FlagLong(&update.StackName, "stack-name", 'n', "override inferrred stack name")
+	flags.FlagLong(&update.TemplateFile, "template-file", 't', "template file")
 	flags.Parse(args)
-	return flags.Args()
+	return nil
 }
 
 func (prog *Program) Update(args []string) error {
 	update := Update{Prog: prog}
-	rest := update.ParseFlags(args)
-
-	if len(rest) != 1 {
-		fmt.Printf("expected positional argument with path to template\n")
-		os.Exit(1)
+	err := update.ParseFlags(args)
+	if err != nil {
+		return err
 	}
 
-	update.TemplateFile = rest[0]
+	err = prog.Whoami([]string{})
+	if err != nil {
+		return errors.Wrap(err, "get whoami")
+	}
 
 	stackName := update.deriveStackName()
 	if stackName == "" {
@@ -56,174 +55,28 @@ func (prog *Program) Update(args []string) error {
 
 	parameters, err := update.parseAllParameters()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "parse parameters")
 	}
 
-	stackExistsOut := make(chan bool, 1)
-	stackExistsErr := make(chan error, 1)
-	getWhoamiOut := make(chan *sts.GetCallerIdentityOutput, 1)
-	getWhoamiErr := make(chan error, 1)
-
-	go func() {
-		update.Prog.Verbosef("getting whoami...")
-		identity, err := prog.getWhoami()
-		if err != nil {
-			getWhoamiErr <- err
-		} else {
-			getWhoamiOut <- identity
-		}
-
-		close(getWhoamiOut)
-		close(getWhoamiErr)
-	}()
-
-	go func() {
-		update.Prog.Verbosef("finding stack %s...", stackName)
-		exists, err := cfn.StackExists(update.Sess(), stackName)
-		if err != nil {
-			stackExistsErr <- err
-		} else {
-			stackExistsOut <- exists
-		}
-
-		close(stackExistsOut)
-		close(stackExistsErr)
-	}()
-
-	if err, ok := <-getWhoamiErr; ok {
-		return errors.Wrap(err, "get whoami")
-	}
-
-	PPrintWhoami(update.Sess(), <-getWhoamiOut)
-
-	pprint.Field("StackName", stackName)
-	pprint.Write("")
-
-	if err, ok := <-stackExistsErr; ok {
-		return errors.Wrap(err, "check stack exists")
-	}
-
-	exists := <-stackExistsOut
-
-	if !exists {
-		ok := pprint.Prompt("Stack %s does not exist. Create?", stackName)
-		if !ok {
-			pprint.Write("Aborted by user.")
-			os.Exit(1)
-		}
-
-		update.Prog.Verbosef("Creating stack %s...", stackName)
-	}
-
-	update.Prog.Verbosef("reading template %s...", update.TemplateFile)
-	template, err := ioutil.ReadFile(update.TemplateFile)
+	templateBody, err := ioutil.ReadFile(update.TemplateFile)
 	if err != nil {
-		return errors.Wrapf(err, "failed to read template %s", update.TemplateFile)
+		return errors.Wrapf(err, "read %s", update.TemplateFile)
 	}
 
-	if !exists {
-		update.Prog.Verbosef("creating stack %s via change set...", stackName)
-	} else {
-		update.Prog.Verbosef("updating stack %s via change set...", stackName)
+	decision := manifest.Decision{
+		AccountId:    "",
+		Region:       "",
+		TemplateBody: string(templateBody),
+		Parameters:   parameters,
+		StackName:    stackName,
+		Protected:    !update.Yes,
 	}
 
-	stackUpdate, err := cfn.CreateChangeSet(
-		update.Sess(),
-		stackName,
-		string(template),
-		parameters,
-		!exists)
+	engine := internal.NewEngine(prog.AWS.Session())
+
+	err = engine.Deploy(os.Stdout, &decision)
 	if err != nil {
-		return errors.Wrap(err, "create change set")
-	}
-
-	update.Prog.Verbosef("describing change set %s...", stackUpdate.Name)
-	describe, err := stackUpdate.DescribeChangeSet()
-	if err != nil {
-		return err
-	}
-
-	update.Prog.Verbosef("%+v", *describe)
-
-	PPrintChangeSet(describe)
-
-	if !update.Yes {
-		pprint.Write("")
-		ok := pprint.Prompt("Execute change set?")
-		if !ok {
-			pprint.Write("Aborted by user.")
-			os.Exit(1)
-		}
-	} else {
-		update.Prog.Verbosef("proceeding automatically (--yes)")
-	}
-
-	eventsSince := time.Now()
-
-	update.Prog.Verbosef("executing change set...")
-	if err := stackUpdate.Execute(); err != nil {
-		return errors.Wrap(err, "execute stack update")
-	}
-
-	lastStatus := cfn.StackStatus("UNKNOWN")
-	update.Prog.Verbosef("starting terminal status wait loop...")
-
-	for i := 0; ; i++ {
-		status, err := stackUpdate.GetStatus()
-		if err != nil {
-			return errors.Wrap(err, "get stack status")
-		}
-
-		if status != lastStatus {
-			pprint.Printf("\n")
-			t := time.Now()
-			events, err := stackUpdate.GetEvents(eventsSince, t)
-			eventsSince = t
-			if err != nil {
-				return errors.Wrap(err, "get stack events")
-			}
-
-			for _, event := range events {
-				if strings.HasSuffix(*event.ResourceStatus, "_FAILED") {
-					PPrintStackEvent(event)
-				}
-			}
-
-			lastStatus, i = status, 0
-			pprint.Printf("%s", status)
-			if !status.IsTerminal() {
-				pprint.Printf("...")
-			}
-		}
-
-		if status.IsTerminal() {
-			pprint.Printf("\n")
-			break
-		}
-
-		sleepTime := 5 * time.Second
-
-		if i < 5 {
-			// Rapid updates for the first 10 seconds.
-			sleepTime = 2 * time.Second
-		}
-
-		time.Sleep(sleepTime)
-		pprint.Printf(".")
-	}
-
-	if lastStatus.IsFailed() {
-		os.Exit(1)
-	}
-
-	outputs, err := stackUpdate.GetOutputs()
-	if err != nil {
-		return errors.Wrap(err, "get stack outputs")
-	}
-
-	if len(outputs) > 0 {
-		pprint.Write("")
-		PPrintStackOutputs(outputs)
+		return errors.Wrap(err, "deploy stack")
 	}
 
 	return nil
@@ -258,7 +111,7 @@ func (update *Update) parseAllParameters() (map[string]string, error) {
 	for _, path := range files {
 		update.Prog.Verbosef("reading parameters from %s...", path)
 
-		paramsFromFile, err := ParseParameterFile(path)
+		paramsFromFile, err := parseParameterFile(path)
 
 		if err != nil {
 			return nil, err
@@ -276,11 +129,9 @@ func (update *Update) parseAllParameters() (map[string]string, error) {
 	}
 
 	if len(update.Parameters) > 0 {
-		update.Prog.Verbosef("applying command-line parameter overrides...")
-
-		for _, paramSpec := range params {
-			param := ParseParameterFromCommandLine(paramSpec)
-			result[*param.ParameterKey] = *param.ParameterValue
+		for _, param := range params {
+			k, v := parseParameterString(param)
+			result[k] = v
 		}
 	}
 

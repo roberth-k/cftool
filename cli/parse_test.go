@@ -13,7 +13,7 @@ func checkParam(t *testing.T, input string, expectedKey string, expectedValue st
 }
 
 func checkFile(t *testing.T, path string, expect map[string]string) {
-	actual, err := ParseParameterFile(filepath.Join("testdata", path))
+	actual, err := parseParameterFile(filepath.Join("testdata", path))
 	assert.NoError(t, err)
 	assert.Equal(t, len(expect), len(actual))
 

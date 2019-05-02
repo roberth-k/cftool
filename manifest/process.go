@@ -32,8 +32,19 @@ type ProcessInput struct {
 }
 
 type Decision struct {
-	Tenant     string
-	Deployment *Deployment
+	AccountId    string
+	Region       string
+	TemplateBody string
+	Parameters   map[string]string
+	StackName    string
+	Protected    bool
+	Tenant       NameLabel
+	Stack        NameLabel
+}
+
+type NameLabel struct {
+	Name  string
+	Label string
 }
 
 func (m *Manifest) Process(input ProcessInput) ([]*Decision, error) {
@@ -114,6 +125,39 @@ func (m *Manifest) Process(input ProcessInput) ([]*Decision, error) {
 		return nil, errors.Wrapf(err, "apply template to deployment")
 	}
 
-	result := []*Decision{{Deployment: &deployment, Tenant: input.Tenant}}
+	templateBody, err := ioutil.ReadFile(deployment.Template)
+	if err != nil {
+		return nil, errors.Wrapf(err, "read %s", deployment.Template)
+	}
+
+	parameters := map[string]string{}
+	for _, param := range deployment.Parameters {
+		if param.File != "" {
+			kvp, err := ParseParameterFile(param.File)
+			if err != nil {
+				return nil, errors.Wrapf(err, "parse parameter file")
+			}
+
+			for k, v := range kvp {
+				parameters[k] = v
+			}
+		} else {
+			parameters[param.Key] = param.Value
+		}
+	}
+
+	result := []*Decision{
+		{
+			AccountId:    deployment.AccountId,
+			Region:       deployment.Region,
+			TemplateBody: string(templateBody),
+			Parameters:   parameters,
+			StackName:    deployment.StackName,
+			Protected:    false,
+			Tenant:       NameLabel{tenant.Name, tenant.Label},
+			Stack:        NameLabel{stack.Name, stack.Label},
+		},
+	}
+
 	return result, nil
 }

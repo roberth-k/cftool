@@ -38,11 +38,8 @@ func ChangeHeader(w io.Writer, action string, resourceType string, logicalResour
 }
 
 func ChangeSet(w io.Writer, cs *cf.DescribeChangeSetOutput) {
-	for i, change := range cs.Changes {
-		if i > 0 {
-			// Spacing
-			fmt.Fprintf(w, "\n")
-		}
+	for _, change := range cs.Changes {
+		fmt.Fprintf(w, "\n") // Spacing.
 
 		if *change.Type != cf.ChangeTypeResource {
 			ColWarning.Fprintf(w, "skipping unknown resource type: %s", *change.Type)

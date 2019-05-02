@@ -6,6 +6,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	cfn "github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/pborman/getopt/v2"
+	"github.com/pkg/errors"
+	"github.com/tetratom/cfn-tool/cli/internal"
 	"github.com/tetratom/cfn-tool/cli/pprint"
 	"os"
 )
@@ -95,6 +97,13 @@ func main() {
 	}
 
 	if err != nil {
+		for cause := err; cause != nil; cause = errors.Cause(cause) {
+			if cause == internal.ErrAbortedByUser {
+				fmt.Fprintf(os.Stderr, "Aborted by user.\n")
+				os.Exit(1)
+			}
+		}
+
 		fmt.Printf("error: %s\n", err) // TODO: %+v
 		os.Exit(1)
 	}
@@ -104,6 +113,6 @@ func main() {
 
 func (p *Program) Verbosef(msg string, args ...interface{}) {
 	if p.Verbose {
-		pprint.Verbosef(msg, args...)
+		pprint.Verbosef(os.Stdout, msg, args...)
 	}
 }

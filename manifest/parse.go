@@ -1,4 +1,4 @@
-package main
+package manifest
 
 import (
 	"encoding/json"
@@ -8,19 +8,7 @@ import (
 	"strings"
 )
 
-func parseParameterString(str string) (string, string) {
-	split := strings.SplitN(str, "=", 2)
-	key := split[0]
-	value := ""
-
-	if len(split) > 1 {
-		value = split[1]
-	}
-
-	return key, value
-}
-
-func parseParameterFile(path string) (map[string]string, error) {
+func ParseParameterFile(path string) (map[string]string, error) {
 	result := make(map[string]string)
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {

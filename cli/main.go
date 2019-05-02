@@ -13,9 +13,9 @@ import (
 )
 
 type AWSOptions struct {
-	Profile  string `short:"p" long:"profile" optional:"yes" description:"AWS credential profile"`
-	Region   string `short:"r" long:"region" optional:"yes" description:"AWS region"`
-	Endpoint string `short:"e" long:"endpoint" optional:"yes" description:"AWS API endpoint"`
+	Profile  string
+	Region   string
+	Endpoint string
 	sess     *session.Session
 	client   *cfn.CloudFormation
 }
@@ -54,29 +54,39 @@ func (opts *AWSOptions) Session() *session.Session {
 
 type Program struct {
 	AWS     AWSOptions `group:"AWS options"`
-	Verbose bool       `short:"v" long:"verbose" description:"Verbose output"`
+	Verbose bool
+	Color   bool
 }
 
-func (prog *Program) MainArgs(argv []string) []string {
+func (prog *Program) ParseFlags(argv []string) []string {
 	set := getopt.New()
-
+	set.FlagLong(&prog.AWS.Region, "region", 'r', "AWS region")
+	set.FlagLong(&prog.AWS.Profile, "profile", 'p', "AWS credential profile")
+	set.FlagLong(&prog.AWS.Endpoint, "endpoint", 'e', "AWS API endpoint")
+	set.FlagLong(&prog.Verbose, "verbose", 'v', "enable verbose output")
+	color := set.EnumLong(
+		"color", 'c', []string{"on", "off"}, "on",
+		"'on' or 'off'. pass 'off' to disable colors.")
 	set.Parse(argv)
+
+	if color == nil || *color == "on" {
+		prog.Color = true
+	}
+
 	return set.Args()
 }
 
 func main() {
 	prog := Program{}
-
-	getopt.FlagLong(&prog.AWS.Region, "region", 'r', "AWS region")
-	getopt.FlagLong(&prog.AWS.Profile, "profile", 'p', "AWS credential profile")
-	getopt.FlagLong(&prog.AWS.Endpoint, "endpoint", 'e', "AWS API endpoint")
-	getopt.FlagLong(&prog.Verbose, "verbose", 'v', "enable verbose output")
-	getopt.ParseV2()
-	rest := getopt.Args()
+	rest := prog.ParseFlags(os.Args)
 
 	if len(rest) < 1 {
-		fmt.Printf("expected a subcommand: whoami, update.\n")
+		fmt.Printf("Expected a subcommand: deploy, update, or whoami.\n")
 		os.Exit(1)
+	}
+
+	if !prog.Color {
+		pprint.DisableColor()
 	}
 
 	var err error

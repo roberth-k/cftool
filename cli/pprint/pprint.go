@@ -15,6 +15,8 @@ var (
 	Yellow  = color.New(color.FgYellow)
 )
 
+var colors = []*color.Color{Cyan, Green, Magenta, Red, Yellow}
+
 var (
 	ColField     = Cyan
 	ColAdd       = Green
@@ -25,6 +27,18 @@ var (
 	ColError     = Red
 	ColVerbose   = Yellow
 )
+
+func EnableColor() {
+	for _, col := range colors {
+		col.EnableColor()
+	}
+}
+
+func DisableColor() {
+	for _, col := range colors {
+		col.DisableColor()
+	}
+}
 
 func Promptf(w io.Writer, text string, args ...interface{}) bool {
 	for {

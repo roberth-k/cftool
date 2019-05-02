@@ -118,7 +118,7 @@ func (m *Manifest) Process(input ProcessInput) ([]*Decision, error) {
 	deployment.MergeFrom(stack.Default)
 	deployment.MergeFrom(stackDeployment.Override)
 
-	tpl.Deployment = &deployment
+	tpl.Stack = &deployment
 
 	err = deployment.ApplyTemplate(tpl)
 	if err != nil {
@@ -127,7 +127,7 @@ func (m *Manifest) Process(input ProcessInput) ([]*Decision, error) {
 
 	templateBody, err := ioutil.ReadFile(deployment.Template)
 	if err != nil {
-		return nil, errors.Wrapf(err, "read %s", deployment.Template)
+		return nil, err
 	}
 
 	parameters := map[string]string{}

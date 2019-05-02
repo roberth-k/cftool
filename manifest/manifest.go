@@ -35,9 +35,8 @@ func (t *Tenant) ApplyTemplate(tpl *Template) (err error) {
 		err = t.Default.ApplyTemplate(tpl)
 	}
 
-	for k := range t.Tags {
+	for k, v := range t.Tags {
 		if err == nil {
-			v := t.Tags[k]
 			err = tpl.ApplyTo(&v)
 			t.Tags[k] = v
 		}
@@ -149,10 +148,10 @@ func (p *Parameter) ApplyTemplate(tpl *Template) (err error) {
 }
 
 type Template struct {
-	Constants  map[string]string
-	Tags       map[string]string
-	Tenant     *Tenant
-	Deployment *Deployment
+	Constants map[string]string
+	Tags      map[string]string
+	Tenant    *Tenant
+	Stack     *Deployment
 }
 
 func NewTemplate() *Template {

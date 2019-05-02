@@ -107,11 +107,9 @@ func main() {
 	}
 
 	if err != nil {
-		for cause := err; cause != nil; cause = errors.Cause(cause) {
-			if cause == internal.ErrAbortedByUser {
-				fmt.Fprintf(os.Stderr, "Aborted by user.\n")
-				os.Exit(1)
-			}
+		if errors.Cause(err) == internal.ErrAbortedByUser {
+			fmt.Fprintf(os.Stderr, "Aborted by user.\n")
+			os.Exit(1)
 		}
 
 		fmt.Printf("error: %s\n", err) // TODO: %+v

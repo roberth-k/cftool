@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"github.com/pborman/getopt/v2"
 	"github.com/pkg/errors"
+	"github.com/tetratom/cfn-tool/cli/internal"
 	"github.com/tetratom/cfn-tool/manifest"
 	"os"
+	"strings"
 )
 
 type Deploy struct {
@@ -27,6 +29,25 @@ func (d *Deploy) ParseArgs(args []string) []string {
 
 	if len(rest) != 0 {
 		fmt.Printf("Did not expect positional parameters.\n")
+		os.Exit(1)
+	}
+
+	if d.ManifestFile == "" {
+		d.ManifestFile = ".cfn-tool.yml"
+	}
+
+	if strings.HasPrefix(d.ManifestFile, "~/") {
+		homedir, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Printf("unable to determine user home directory")
+			os.Exit(1)
+		}
+
+		d.ManifestFile = homedir + d.ManifestFile[1:]
+	}
+
+	if _, err := os.Stat(d.ManifestFile); os.IsNotExist(err) {
+		fmt.Printf("%s does not exist\n", d.ManifestFile)
 		os.Exit(1)
 	}
 
@@ -55,6 +76,23 @@ func (prog *Program) Deploy(args []string) error {
 		return errors.Wrap(err, "process manifest")
 	}
 
-	fmt.Printf("%+v\n", decisions)
+	err = prog.Whoami([]string{})
+	if err != nil {
+		return errors.Wrap(err, "whoami")
+	}
+
+	engine := internal.NewEngine(prog.AWS.Session())
+
+	for _, decision := range decisions {
+		if d.Yes && !decision.Protected {
+			decision.Protected = false
+		}
+
+		err = engine.Deploy(os.Stdout, decision)
+		if err != nil {
+			return errors.Wrap(err, "deploy stack")
+		}
+	}
+
 	return nil
 }

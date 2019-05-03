@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/pborman/getopt/v2"
 	"github.com/pkg/errors"
 	"github.com/tetratom/cfn-tool/cli/internal"
@@ -19,10 +18,6 @@ type Update struct {
 	Yes            bool
 	StackName      string
 	TemplateFile   string
-}
-
-func (u *Update) Sess() *session.Session {
-	return u.Prog.AWS.Session()
 }
 
 func (update *Update) ParseFlags(args []string) error {
@@ -72,9 +67,12 @@ func (prog *Program) Update(args []string) error {
 		Protected:    !update.Yes,
 	}
 
-	engine := internal.NewEngine(prog.AWS.Session())
+	deployer, err := internal.NewDeployer(&prog.AWS, &decision)
+	if err != nil {
+		return errors.Wrap(err, "new deployer")
+	}
 
-	err = engine.Deploy(os.Stdout, &decision)
+	err = deployer.Deploy(os.Stdout)
 	if err != nil {
 		return errors.Wrap(err, "deploy stack")
 	}

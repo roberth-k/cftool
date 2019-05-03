@@ -5,11 +5,13 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	cf "github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/tetratom/cfn-tool/cli/pprint"
 	"github.com/tetratom/cfn-tool/manifest"
 	"io"
+	"os"
 	"strings"
 	"time"
 )
@@ -30,20 +32,44 @@ func (status StackStatus) IsTerminal() bool {
 	return status.IsComplete() || status.IsFailed()
 }
 
-// Engine visually executes CloudFormation deployments.
-type Engine struct {
-	sess   *session.Session
-	client *cf.CloudFormation
+type Deployer struct {
+	*manifest.Decision
+	sess          *session.Session
+	client        *cf.CloudFormation
+	ChangeSetName string
 }
 
-func NewEngine(sess *session.Session) *Engine {
-	return &Engine{sess, cf.New(sess)}
+func NewDeployer(awsopts *AWSOptions, d *manifest.Decision) (*Deployer, error) {
+	opts := session.Options{}
+
+	_ = os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
+
+	if opts.Profile != "" {
+		opts.Profile = awsopts.Profile
+	}
+
+	if d.Region != "" {
+		opts.Config.Region = aws.String(d.Region)
+	}
+
+	if awsopts.Endpoint != "" {
+		opts.Config.Endpoint = aws.String(awsopts.Endpoint)
+	}
+
+	sess, err := session.NewSessionWithOptions(opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "create aws session")
+	}
+
+	client := cf.New(sess)
+
+	return &Deployer{Decision: d, sess: sess, client: client}, nil
 }
 
-func (eng *Engine) Deploy(w io.Writer, d *manifest.Decision) error {
+func (d *Deployer) Deploy(w io.Writer) error {
 	pprint.Field(w, "StackName", d.StackName)
 
-	exists, err := eng.stackExists(d.StackName)
+	exists, err := d.stackExists()
 	if err != nil {
 		return errors.Wrapf(err, "describe stack %s", d.StackName)
 	}
@@ -55,7 +81,7 @@ func (eng *Engine) Deploy(w io.Writer, d *manifest.Decision) error {
 	}
 
 	nochange := false
-	chset, err := eng.createChangeSet(d, !exists)
+	chset, err := d.createChangeSet(!exists)
 	if err != nil {
 		if strings.Contains(err.Error(), "The submitted information didn't contain changes") {
 			nochange = true
@@ -79,7 +105,7 @@ func (eng *Engine) Deploy(w io.Writer, d *manifest.Decision) error {
 
 		since := time.Now()
 
-		_, err = eng.client.ExecuteChangeSet(
+		_, err = d.client.ExecuteChangeSet(
 			&cf.ExecuteChangeSetInput{
 				StackName:     chset.StackName,
 				ChangeSetName: chset.ChangeSetName,
@@ -88,7 +114,7 @@ func (eng *Engine) Deploy(w io.Writer, d *manifest.Decision) error {
 			return errors.Wrap(err, "execute change set")
 		}
 
-		stack, err := eng.monitorStackUpdate(w, d.StackName, since)
+		stack, err := d.monitorStackUpdate(w, since)
 		if err != nil {
 			return errors.Wrap(err, "monitor stack update")
 		}
@@ -99,7 +125,7 @@ func (eng *Engine) Deploy(w io.Writer, d *manifest.Decision) error {
 		}
 	}
 
-	outputs, err := eng.getStackOutputs(d.StackName)
+	outputs, err := d.getStackOutputs()
 	if err != nil {
 		return errors.Wrap(err, "get stack outputs")
 	}
@@ -115,23 +141,23 @@ func (eng *Engine) Deploy(w io.Writer, d *manifest.Decision) error {
 	return nil
 }
 
-func (eng *Engine) describeStack(name string) (*cf.Stack, error) {
-	stacks, err := eng.client.DescribeStacks(
-		&cf.DescribeStacksInput{StackName: aws.String(name)})
+func (d *Deployer) describeStack() (*cf.Stack, error) {
+	stacks, err := d.client.DescribeStacks(
+		&cf.DescribeStacksInput{StackName: aws.String(d.StackName)})
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "describe stack %s", name)
+		return nil, errors.Wrapf(err, "describe stack %s", d.StackName)
 	}
 
 	if len(stacks.Stacks) != 1 {
-		return nil, errors.Wrapf(err, "stack %s not found", name)
+		return nil, errors.Wrapf(err, "stack %s not found", d.StackName)
 	}
 
 	return stacks.Stacks[0], nil
 }
 
-func (eng *Engine) stackExists(name string) (bool, error) {
-	_, err := eng.describeStack(name)
+func (d *Deployer) stackExists() (bool, error) {
+	_, err := d.describeStack()
 	if err != nil {
 		if strings.Contains(err.Error(), "does not exist") {
 			return false, nil
@@ -143,19 +169,17 @@ func (eng *Engine) stackExists(name string) (bool, error) {
 	return true, err
 }
 
-func (eng *Engine) createChangeSet(
-	d *manifest.Decision,
-	create bool,
-) (*cf.DescribeChangeSetOutput, error) {
-
+func (d *Deployer) createChangeSet(create bool) (*cf.DescribeChangeSetOutput, error) {
 	changeSetType := cf.ChangeSetTypeUpdate
 	if create {
 		changeSetType = cf.ChangeSetTypeCreate
 	}
 
+	d.ChangeSetName = "StackUpdate-" + uuid.New().String()
+
 	input := cf.CreateChangeSetInput{
 		StackName:     aws.String(d.StackName),
-		ChangeSetName: aws.String("StackUpdate-" + uuid.New().String()),
+		ChangeSetName: aws.String(d.ChangeSetName),
 		Parameters:    make([]*cf.Parameter, len(d.Parameters)),
 		TemplateBody:  aws.String(d.TemplateBody),
 		ChangeSetType: aws.String(changeSetType),
@@ -175,7 +199,7 @@ func (eng *Engine) createChangeSet(
 		index += 1
 	}
 
-	_, err := eng.client.CreateChangeSet(&input)
+	_, err := d.client.CreateChangeSet(&input)
 	if err != nil {
 		return nil, err
 	}
@@ -187,10 +211,10 @@ func (eng *Engine) createChangeSet(
 		// at the start of the loop.
 		time.Sleep(2 * time.Second)
 
-		chset, err = eng.client.DescribeChangeSet(
+		chset, err = d.client.DescribeChangeSet(
 			&cf.DescribeChangeSetInput{
-				StackName:     input.StackName,
-				ChangeSetName: input.ChangeSetName,
+				StackName:     aws.String(d.StackName),
+				ChangeSetName: aws.String(d.ChangeSetName),
 			})
 		if err != nil {
 			return nil, errors.Wrap(err, "describe change set")
@@ -212,14 +236,10 @@ func (eng *Engine) createChangeSet(
 	return chset, nil
 }
 
-func (eng *Engine) getStackEvents(
-	stackName string,
-	since time.Time,
-	until time.Time,
-) ([]*cf.StackEvent, error) {
-	out, err := eng.client.DescribeStackEvents(
+func (d *Deployer) getStackEvents(since time.Time, until time.Time) ([]*cf.StackEvent, error) {
+	out, err := d.client.DescribeStackEvents(
 		&cf.DescribeStackEventsInput{
-			StackName: aws.String(stackName),
+			StackName: aws.String(d.StackName),
 		})
 	if err != nil {
 		return nil, errors.Wrap(err, "describe stack events")
@@ -237,10 +257,10 @@ func (eng *Engine) getStackEvents(
 	return result, nil
 }
 
-func (eng *Engine) getStackOutputs(stackName string) ([]*cf.Output, error) {
-	stack, err := eng.client.DescribeStacks(
+func (d *Deployer) getStackOutputs() ([]*cf.Output, error) {
+	stack, err := d.client.DescribeStacks(
 		&cf.DescribeStacksInput{
-			StackName: aws.String(stackName),
+			StackName: aws.String(d.StackName),
 		})
 	if err != nil {
 		return nil, errors.Wrap(err, "describe stack")
@@ -249,16 +269,12 @@ func (eng *Engine) getStackOutputs(stackName string) ([]*cf.Output, error) {
 	return stack.Stacks[0].Outputs, nil
 }
 
-func (eng *Engine) monitorStackUpdate(
-	w io.Writer,
-	stackName string,
-	startTime time.Time,
-) (stack *cf.Stack, err error) {
+func (d *Deployer) monitorStackUpdate(w io.Writer, startTime time.Time) (stack *cf.Stack, err error) {
 	lastStatus := StackStatus("UNKNOWN")
 	since := startTime
 
 	for i := 0; ; i++ {
-		stack, err = eng.describeStack(stackName)
+		stack, err = d.describeStack()
 		if err != nil {
 			return nil, err
 		}
@@ -272,7 +288,7 @@ func (eng *Engine) monitorStackUpdate(
 		if status != lastStatus {
 			fmt.Fprintf(w, "\n")
 			t := time.Now()
-			events, err := eng.getStackEvents(stackName, since, t)
+			events, err := d.getStackEvents(since, t)
 			since = t
 			if err != nil {
 				return nil, errors.Wrap(err, "get stack events")
@@ -309,4 +325,15 @@ func (eng *Engine) monitorStackUpdate(
 	}
 
 	return stack, err
+}
+
+func (d *Deployer) Whoami(w io.Writer) error {
+	client := sts.New(d.sess)
+	id, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	if err != nil {
+		return err
+	}
+
+	pprint.Whoami(w, d.sess.Config.Region, id)
+	return nil
 }

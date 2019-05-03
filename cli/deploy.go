@@ -126,14 +126,22 @@ func (prog *Program) Deploy(args []string) error {
 		return errors.Wrap(err, "whoami")
 	}
 
-	engine := internal.NewEngine(prog.AWS.Session())
-
 	for _, decision := range decisions {
+		deployer, err := internal.NewDeployer(&prog.AWS, decision)
+		if err != nil {
+			return errors.Wrap(err, "new deployer")
+		}
+
+		err = deployer.Whoami(os.Stdout)
+		if err != nil {
+			return errors.Wrap(err, "whoami")
+		}
+
 		if !decision.Protected && !d.Yes {
 			decision.Protected = true
 		}
 
-		err = engine.Deploy(os.Stdout, decision)
+		err = deployer.Deploy(os.Stdout)
 		if err != nil {
 			return errors.Wrap(err, "deploy stack")
 		}

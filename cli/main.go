@@ -2,9 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	cfn "github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/pborman/getopt/v2"
 	"github.com/pkg/errors"
 	"github.com/tetratom/cfn-tool/cli/internal"
@@ -12,48 +9,8 @@ import (
 	"os"
 )
 
-type AWSOptions struct {
-	Profile  string
-	Region   string
-	Endpoint string
-	sess     *session.Session
-	client   *cfn.CloudFormation
-}
-
-func (opts *AWSOptions) CfnClient() *cfn.CloudFormation {
-	if opts.client == nil {
-		opts.client = cfn.New(opts.Session())
-	}
-
-	return opts.client
-}
-
-func (opts *AWSOptions) Session() *session.Session {
-	if opts.sess == nil {
-		sessOpts := session.Options{Config: aws.Config{}}
-
-		_ = os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
-
-		if opts.Profile != "" {
-			sessOpts.Profile = opts.Profile
-		}
-
-		if opts.Region != "" {
-			sessOpts.Config.Region = aws.String(opts.Region)
-		}
-
-		if opts.Endpoint != "" {
-			sessOpts.Config.Endpoint = aws.String(opts.Region)
-		}
-
-		opts.sess = session.Must(session.NewSessionWithOptions(sessOpts))
-	}
-
-	return opts.sess
-}
-
 type Program struct {
-	AWS     AWSOptions `group:"AWS options"`
+	AWS     internal.AWSOptions
 	Verbose bool
 	Color   bool
 }

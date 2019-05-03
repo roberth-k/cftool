@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/tetratom/cfn-tool/cli/pprint"
+	"github.com/pkg/errors"
+	"github.com/tetratom/cfn-tool/cli/internal"
+	"github.com/tetratom/cfn-tool/manifest"
 	"log"
 	"os"
 	"strings"
@@ -15,21 +16,11 @@ func (prog *Program) Whoami(args []string) error {
 		os.Exit(1)
 	}
 
-	id, err := prog.getWhoami()
+	decision := manifest.Decision{}
+	deployer, err := internal.NewDeployer(&prog.AWS, &decision)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "new deployer")
 	}
 
-	pprint.Whoami(os.Stdout, prog.AWS.Session().Config.Region, id)
-	return nil
-}
-
-func (prog *Program) getWhoami() (*sts.GetCallerIdentityOutput, error) {
-	client := sts.New(prog.AWS.Session())
-	identity, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
-	if err != nil {
-		return nil, err
-	}
-
-	return identity, nil
+	return deployer.Whoami(os.Stdout)
 }

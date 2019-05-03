@@ -7,7 +7,7 @@ Global:
 
 Tenants:
   - Name: live
-    Label: MyService EU (Live)
+    Label: MyService EU (live)
     Default:
       Region: eu-west-1
       AccountId: "{{.Constants.LiveAccountId}}"
@@ -15,7 +15,7 @@ Tenants:
     Tags:
       Env: live
   - Name: live-us
-    Label: MyService US (Live)
+    Label: MyService US (live)
     Default:
       Region: us-west-1
       AccountId: "{{.Constants.LiveAccountId}}"
@@ -23,7 +23,7 @@ Tenants:
     Tags:
       Env: live
   - Name: test
-    Label: MyService EU (Test)
+    Label: MyService EU (test)
     Default:
       Region: eu-west-1
       AccountId: "{{.Constants.TestAccountId}}"
@@ -34,9 +34,9 @@ Stacks:
   - Name: mystack
     Label: My Stack
     Default:
-      Template: templates/mystack.yml
+      Template: testdata/templates/mystack.yml
       Parameters:
-        - File: "stacks/{{.Tags.Env}}/{{.Deployment.Region}}/{{.Deployment.StackName}}.json"
+        - File: "testdata/stacks/{{.Tenant.Name}}/{{.Stack.Region}}/{{.Stack.StackName}}.json"
         - Key: Environment
           Value: "{{.Tags.Env}}"
       StackName: "{{.Tags.Env}}-mystack"

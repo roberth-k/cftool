@@ -3,13 +3,21 @@ package manifest
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"io/ioutil"
 	"os"
 	"testing"
 )
 
-func TestManifest_Process(t *testing.T) {
-	tv := true
+func readAll(filename string) string {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
 
+	return string(data)
+}
+
+func TestManifest_Process(t *testing.T) {
 	tests := []struct {
 		File   string
 		Input  ProcessInput
@@ -23,18 +31,17 @@ func TestManifest_Process(t *testing.T) {
 			},
 			Expect: []*Decision{
 				{
-					Tenant: "test",
-					Deployment: &Deployment{
-						AccountId: "222222222222",
-						Parameters: []*Parameter{
-							{File: "stacks/test/eu-west-1/test-mystack.json"},
-							{Key: "Environment", Value: "test"},
-						},
-						StackName: "test-mystack",
-						Template:  "templates/mystack.yml",
-						Region:    "eu-west-1",
-						Protected: nil,
+					AccountId: "222222222222",
+					Parameters: map[string]string{
+						"Foo":         "Bar",
+						"Environment": "test",
 					},
+					StackName:    "test-mystack",
+					TemplateBody: readAll("testdata/templates/mystack.yml"),
+					Region:       "eu-west-1",
+					Protected:    false,
+					Tenant:       NameLabel{Name: "test", Label: "MyService EU (test)"},
+					Stack:        NameLabel{Name: "mystack", Label: "My Stack"},
 				},
 			},
 		},
@@ -46,18 +53,17 @@ func TestManifest_Process(t *testing.T) {
 			},
 			Expect: []*Decision{
 				{
-					Tenant: "live-us",
-					Deployment: &Deployment{
-						AccountId: "111111111111",
-						Parameters: []*Parameter{
-							{File: "stacks/live/us-west-1/live-mystack-us.json"},
-							{Key: "Environment", Value: "live"},
-						},
-						StackName: "live-mystack-us",
-						Template:  "templates/mystack.yml",
-						Region:    "us-west-1",
-						Protected: &tv,
+					AccountId: "111111111111",
+					Parameters: map[string]string{
+						"Foo":         "Bax",
+						"Environment": "live",
 					},
+					StackName:    "live-mystack-us",
+					TemplateBody: readAll("testdata/templates/mystack.yml"),
+					Region:       "us-west-1",
+					Protected:    false,
+					Tenant:       NameLabel{Name: "live-us", Label: "MyService US (live)"},
+					Stack:        NameLabel{Name: "mystack", Label: "My Stack"},
 				},
 			},
 		},

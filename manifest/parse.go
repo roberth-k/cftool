@@ -15,6 +15,11 @@ func ParseParameterFile(path string) (map[string]string, error) {
 		return nil, errors.Wrapf(err, "read %s", path)
 	}
 
+	err = validateSchema(parametersSchema, bytes)
+	if err != nil {
+		return nil, errors.Wrap(err, "parameter file validation failure")
+	}
+
 	if strings.HasSuffix(path, ".json") {
 		var params []cloudformation.Parameter
 		err = json.Unmarshal(bytes, &params)

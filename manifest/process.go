@@ -13,6 +13,11 @@ func Parse(reader io.Reader) (*Manifest, error) {
 		return nil, errors.Wrapf(err, "read manifest")
 	}
 
+	err = validateSchema(manifestSchema, data)
+	if err != nil {
+		return nil, errors.Wrap(err, "manifest schema validation failure")
+	}
+
 	var m Manifest
 	err = yaml.Unmarshal(data, &m)
 	if err != nil {

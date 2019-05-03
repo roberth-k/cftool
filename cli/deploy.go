@@ -35,10 +35,54 @@ func fileExists(path string) (bool, error) {
 	return true, nil
 }
 
+func findManifest(file string) (string, error) {
+	file = strings.TrimSpace(file)
+
+	if file == "" {
+		file = ".cfn-tool.yml"
+
+		for {
+			ok, err := fileExists(file)
+			if err != nil {
+				fmt.Printf("%s\n", errors.Wrapf(err, "check %s", file))
+				os.Exit(1)
+			}
+
+			if ok {
+				break
+			}
+
+			file = path.Join("..", file)
+			abspath, _ := filepath.Abs(file)
+			if filepath.Dir(abspath) == "/" {
+				fmt.Printf("unable to find .cfn-tool.yml\n")
+				os.Exit(1)
+			}
+		}
+	}
+
+	file = strings.TrimSpace(file)
+
+	if strings.HasPrefix(file, "~/") {
+		homedir, err := os.UserHomeDir()
+		if err != nil {
+			return "", errors.Errorf("unable to determine user home directory")
+		}
+
+		file = homedir + file[1:]
+	}
+
+	if ok, _ := fileExists(file); !ok {
+		return "", errors.Errorf("%s does not exist\n", file)
+	}
+
+	return file, nil
+}
+
 func (d *Deploy) ParseArgs(args []string) []string {
 	flags := getopt.New()
 	flags.FlagLong(&d.Yes, "yes", 'y', "do not prompt for confirmation")
-	flags.FlagLong(&d.ManifestFile, "tool-file", 'f', "tool file path")
+	flags.FlagLong(&d.ManifestFile, "manifest", 'f', "manifest path")
 	flags.FlagLong(&d.Stack, "stack", 's', "stack to deploy")
 	flags.FlagLong(&d.Tenant, "tenant", 't', "tenant to deploy for")
 	flags.Parse(args)
@@ -49,45 +93,13 @@ func (d *Deploy) ParseArgs(args []string) []string {
 		os.Exit(1)
 	}
 
-	if d.ManifestFile == "" {
-		d.ManifestFile = ".cfn-tool.yml"
-
-		for {
-			ok, err := fileExists(d.ManifestFile)
-			if err != nil {
-				fmt.Printf("%s\n", errors.Wrapf(err, "check %s", d.ManifestFile))
-				os.Exit(1)
-			}
-
-			if ok {
-				break
-			}
-
-			d.ManifestFile = path.Join("..", d.ManifestFile)
-			abspath, _ := filepath.Abs(d.ManifestFile)
-			if filepath.Dir(abspath) == "/" {
-				fmt.Printf("unable to find .cfn-tool.yml\n")
-				os.Exit(1)
-			}
-		}
-	}
-
-	d.ManifestFile = strings.TrimSpace(d.ManifestFile)
-
-	if strings.HasPrefix(d.ManifestFile, "~/") {
-		homedir, err := os.UserHomeDir()
-		if err != nil {
-			fmt.Printf("unable to determine user home directory")
-			os.Exit(1)
-		}
-
-		d.ManifestFile = homedir + d.ManifestFile[1:]
-	}
-
-	if ok, _ := fileExists(d.ManifestFile); !ok {
-		fmt.Printf("%s does not exist\n", d.ManifestFile)
+	manifest, err := findManifest(d.ManifestFile)
+	if err != nil {
+		fmt.Printf(err.Error())
 		os.Exit(1)
 	}
+
+	d.ManifestFile = manifest
 
 	return rest
 }

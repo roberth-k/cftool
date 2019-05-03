@@ -15,6 +15,10 @@ type Manifest struct {
 	Stacks  []*Stack
 }
 
+func (m *Manifest) AllDeployments() ([]*Decision, error) {
+	return m.Process(ProcessInput{})
+}
+
 type Global struct {
 	Constants map[string]string
 	Tags      map[string]string

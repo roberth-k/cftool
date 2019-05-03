@@ -52,6 +52,9 @@ func main() {
 	case "deploy":
 		err = prog.Deploy(rest)
 
+	case "list":
+		err = prog.List(rest)
+
 	case "update":
 		err = prog.Update(rest)
 

@@ -44,7 +44,7 @@ func NewDeployer(awsopts *AWSOptions, d *manifest.Decision) (*Deployer, error) {
 
 	_ = os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
 
-	if opts.Profile != "" {
+	if awsopts.Profile != "" {
 		opts.Profile = awsopts.Profile
 	}
 

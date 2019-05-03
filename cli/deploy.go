@@ -121,12 +121,9 @@ func (prog *Program) Deploy(args []string) error {
 		return errors.Wrap(err, "process manifest")
 	}
 
-	err = prog.Whoami([]string{})
-	if err != nil {
-		return errors.Wrap(err, "whoami")
-	}
-
 	for _, decision := range decisions {
+		fmt.Printf("\n")
+
 		deployer, err := internal.NewDeployer(&prog.AWS, decision)
 		if err != nil {
 			return errors.Wrap(err, "new deployer")

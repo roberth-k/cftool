@@ -61,6 +61,8 @@ properties:
       properties:
         Name:
           type: string
+        Constants:
+          $ref: "#/definitions/TagSet"
         Label:
           type: string
         Default:

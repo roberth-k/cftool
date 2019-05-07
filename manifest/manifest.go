@@ -26,24 +26,29 @@ type Global struct {
 }
 
 type Tenant struct {
-	Name    string
-	Label   string
-	Default *Deployment
-	Tags    map[string]string
+	Name      string
+	Constants map[string]string
+	Label     string
+	Default   *Deployment
+	Tags      map[string]string
 }
 
 func (t *Tenant) ApplyTemplate(tpl *Template) (err error) {
-	err = tpl.ApplyTo(&t.Name)
-
-	if err == nil {
-		err = t.Default.ApplyTemplate(tpl)
+	for k, v := range t.Constants {
+		tpl.Constants[k] = v
 	}
+
+	err = tpl.ApplyTo(&t.Name)
 
 	for k, v := range t.Tags {
 		if err == nil {
 			err = tpl.ApplyTo(&v)
 			t.Tags[k] = v
 		}
+	}
+
+	if err == nil {
+		err = t.Default.ApplyTemplate(tpl)
 	}
 
 	return err

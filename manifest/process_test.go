@@ -35,6 +35,7 @@ func TestManifest_Process(t *testing.T) {
 					Parameters: map[string]string{
 						"Foo":         "Bar",
 						"Environment": "test",
+						"SomeConst":   "const",
 					},
 					StackName:    "test-mystack",
 					TemplateBody: readAll("testdata/templates/mystack.yml"),
@@ -57,6 +58,7 @@ func TestManifest_Process(t *testing.T) {
 					Parameters: map[string]string{
 						"Foo":         "Bax",
 						"Environment": "live",
+						"SomeConst":   "bax",
 					},
 					StackName:    "live-mystack-us",
 					TemplateBody: readAll("testdata/templates/mystack.yml"),

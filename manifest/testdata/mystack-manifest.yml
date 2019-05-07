@@ -4,6 +4,7 @@ Global:
   Constants:
     LiveAccountId: "111111111111"
     TestAccountId: "222222222222"
+    Some: "bax"
 
 Tenants:
   - Name: live
@@ -22,13 +23,17 @@ Tenants:
       Protected: true
     Tags:
       Env: live
+      Bar: "{{.Constants.Some}}"
   - Name: test
     Label: MyService EU (test)
+    Constants:
+      Some: const
     Default:
       Region: eu-west-1
       AccountId: "{{.Constants.TestAccountId}}"
     Tags:
       Env: test
+      Bar: "{{.Constants.Some}}"
 
 Stacks:
   - Name: mystack
@@ -39,6 +44,8 @@ Stacks:
         - File: "testdata/stacks/{{.Tenant.Name}}/{{.Stack.Region}}/{{.Stack.StackName}}.json"
         - Key: Environment
           Value: "{{.Tags.Env}}"
+        - Key: SomeConst
+          Value: "{{.Tags.Bar}}"
       StackName: "{{.Tags.Env}}-mystack"
     Targets:
       - Tenant: live

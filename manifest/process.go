@@ -72,13 +72,13 @@ func (m *Manifest) Process(input ProcessInput) ([]*Decision, error) {
 
 		tpl.Tenant = tenant
 
-		for k, v := range tenant.Tags {
-			tpl.Tags[k] = v
-		}
-
 		err := tenant.ApplyTemplate(tpl)
 		if err != nil {
 			return nil, errors.Wrapf(err, "apply template to tenant %s", tenant.Name)
+		}
+
+		for k, v := range tenant.Tags {
+			tpl.Tags[k] = v
 		}
 
 		for _, stack := range m.Stacks {

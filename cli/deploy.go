@@ -133,8 +133,10 @@ func (prog *Program) Deploy(args []string) error {
 		return errors.Wrap(err, "process manifest")
 	}
 
-	for _, decision := range decisions {
-		fmt.Printf("\n")
+	for i, decision := range decisions {
+		if i > 0 {
+			fmt.Printf("\n")
+		}
 
 		deployer, err := internal.NewDeployer(&prog.AWS, decision)
 		if err != nil {

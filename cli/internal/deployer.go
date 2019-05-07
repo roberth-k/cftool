@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	cf "github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -43,6 +44,9 @@ func NewDeployer(awsopts *AWSOptions, d *manifest.Decision) (*Deployer, error) {
 	opts := session.Options{}
 
 	_ = os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
+
+	// Allow MFA code entry via standard input.
+	opts.AssumeRoleTokenProvider = stscreds.StdinTokenProvider
 
 	if awsopts.Profile != "" {
 		opts.Profile = awsopts.Profile

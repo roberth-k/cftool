@@ -18,6 +18,7 @@ type Update struct {
 	Yes            bool
 	StackName      string
 	TemplateFile   string
+	ShowDiff       bool
 }
 
 func (update *Update) ParseFlags(args []string) error {
@@ -27,7 +28,13 @@ func (update *Update) ParseFlags(args []string) error {
 	flags.FlagLong(&update.Yes, "yes", 'y', "do not prompt for update confirmation (if a stack already exists)")
 	flags.FlagLong(&update.StackName, "stack-name", 'n', "override inferrred stack name")
 	flags.FlagLong(&update.TemplateFile, "template-file", 't', "template file")
+	showDiff := flags.BoolLong("diff", 'd', "show template diff when updating a stack")
 	flags.Parse(args)
+
+	if showDiff != nil && *showDiff {
+		update.ShowDiff = true
+	}
+
 	return nil
 }
 
@@ -71,6 +78,8 @@ func (prog *Program) Update(args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "new deployer")
 	}
+
+	deployer.ShowDiff = update.ShowDiff
 
 	err = deployer.Deploy(os.Stdout)
 	if err != nil {

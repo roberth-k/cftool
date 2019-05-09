@@ -39,6 +39,7 @@ type Deployer struct {
 	sess          *session.Session
 	client        *cf.CloudFormation
 	ChangeSetName string
+	ShowDiff      bool
 }
 
 func NewDeployer(awsopts *AWSOptions, d *manifest.Decision) (*Deployer, error) {
@@ -82,6 +83,13 @@ func (d *Deployer) Deploy(w io.Writer) error {
 	if !exists {
 		if !pprint.Promptf(w, "\nStack %s does not exist. Create?", d.StackName) {
 			return ErrAbortedByUser
+		}
+	}
+
+	if exists && d.ShowDiff {
+		err := d.TemplateDiff(w)
+		if err != nil {
+			return errors.Wrap(err, "template diff")
 		}
 	}
 
@@ -344,7 +352,6 @@ func (d *Deployer) Whoami(w io.Writer) error {
 }
 
 func (d *Deployer) TemplateDiff(w io.Writer) error {
-	pprint.Field(w, "StackName", d.StackName)
 	fmt.Fprintf(w, "\n")
 
 	exists, err := d.stackExists()
@@ -380,7 +387,11 @@ func (d *Deployer) TemplateDiff(w io.Writer) error {
 
 	lines := strings.Split(text, "\n")
 
-	for _, line := range lines {
+	for i, line := range lines {
+		if i > 0 {
+			fmt.Fprintf(w, "\n")
+		}
+
 		col := pprint.ColDiffText
 
 		if len(line) > 0 {
@@ -394,7 +405,7 @@ func (d *Deployer) TemplateDiff(w io.Writer) error {
 			}
 		}
 
-		_, _ = col.Fprintln(w, line)
+		_, _ = col.Fprint(w, line)
 	}
 
 	return nil

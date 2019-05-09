@@ -14,12 +14,12 @@ import (
 )
 
 type Deploy struct {
-	Prog             *Program
-	Yes              bool
-	ManifestFile     string
-	Stack            string
-	Tenant           string
-	TemplateDiffOnly bool
+	Prog         *Program
+	Yes          bool
+	ManifestFile string
+	Stack        string
+	Tenant       string
+	ShowDiff     bool
 }
 
 func fileExists(path string) (bool, error) {
@@ -86,7 +86,7 @@ func (d *Deploy) ParseArgs(args []string) []string {
 	flags.FlagLong(&d.ManifestFile, "manifest", 'f', "manifest path")
 	flags.FlagLong(&d.Stack, "stack", 's', "stack to deploy")
 	flags.FlagLong(&d.Tenant, "tenant", 't', "tenant to deploy for")
-	diffOnly := flags.BoolLong("template-diff", 'd', "show template diff and exit")
+	showDiff := flags.BoolLong("diff", 'd', "show template diff when updating a stack")
 	flags.Parse(args)
 	rest := flags.Args()
 
@@ -95,8 +95,8 @@ func (d *Deploy) ParseArgs(args []string) []string {
 		os.Exit(1)
 	}
 
-	if diffOnly != nil && *diffOnly {
-		d.TemplateDiffOnly = true
+	if showDiff != nil && *showDiff {
+		d.ShowDiff = true
 	}
 
 	manifest, err := findManifest(d.ManifestFile)
@@ -134,7 +134,9 @@ func (prog *Program) Deploy(args []string) error {
 
 	decisions, err := m.Process(manifest.ProcessInput{
 		Stack:  d.Stack,
-		Tenant: d.Tenant})
+		Tenant: d.Tenant,
+	})
+
 	if err != nil {
 		return errors.Wrap(err, "process manifest")
 	}
@@ -149,17 +151,11 @@ func (prog *Program) Deploy(args []string) error {
 			return errors.Wrap(err, "new deployer")
 		}
 
+		deployer.ShowDiff = d.ShowDiff
+
 		err = deployer.Whoami(os.Stdout)
 		if err != nil {
 			return errors.Wrap(err, "whoami")
-		}
-
-		if d.TemplateDiffOnly {
-			err = deployer.TemplateDiff(os.Stdout)
-			if err != nil {
-				return errors.Wrap(err, "template diff")
-			}
-			continue
 		}
 
 		if !decision.Protected && !d.Yes {

@@ -133,8 +133,24 @@ func (d *Deployer) Deploy(w io.Writer) error {
 		}
 
 		status := StackStatus(*stack.StackStatus)
-		if status.IsFailed() {
-			return errors.New("stack update failed")
+		if !exists && status == cf.StackStatusRollbackComplete {
+			if pprint.Promptf(w, "\nStack failed creation, and must be deleted. Continue?") {
+				_, err := d.client.DeleteStack(&cf.DeleteStackInput{
+					StackName: chset.StackName,
+				})
+
+				if err != nil {
+					return errors.Wrap(err, "delete failed stack")
+				}
+
+				_, err = d.monitorStackUpdate(w, time.Now())
+
+				if err != nil {
+					return errors.Wrap(err, "monitor stack delete")
+				}
+
+				return nil
+			}
 		}
 	}
 

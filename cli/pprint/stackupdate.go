@@ -166,5 +166,6 @@ func StackEvent(w io.Writer, event *cf.StackEvent) {
 }
 
 func StackOutput(w io.Writer, output *cf.Output) {
-	Field(w, *output.OutputKey, *output.OutputValue)
+	ColField.Fprintf(w, "%s: ", *output.OutputKey)
+	Text.Fprintf(w, "%s\n", *output.OutputValue)
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/pmezard/go-difflib/difflib"
 	"github.com/tetratom/cfn-tool/cli/pprint"
 	"github.com/tetratom/cfn-tool/manifest"
 	"io"
@@ -339,5 +340,62 @@ func (d *Deployer) Whoami(w io.Writer) error {
 	}
 
 	pprint.Whoami(w, d.sess.Config.Region, id)
+	return nil
+}
+
+func (d *Deployer) TemplateDiff(w io.Writer) error {
+	pprint.Field(w, "StackName", d.StackName)
+	fmt.Fprintf(w, "\n")
+
+	exists, err := d.stackExists()
+
+	switch {
+	case err != nil:
+		return errors.Wrapf(err, "describe stack %s", d.StackName)
+
+	case !exists:
+		return errors.Errorf("stack %s does not exist.", d.StackName)
+	}
+
+	out, err := d.client.GetTemplate(&cf.GetTemplateInput{
+		StackName: aws.String(d.StackName),
+	})
+
+	if err != nil {
+		return errors.Wrap(err, "get template")
+	}
+
+	diff := difflib.UnifiedDiff{
+		A:        difflib.SplitLines(*out.TemplateBody),
+		B:        difflib.SplitLines(d.TemplateBody),
+		FromFile: "Original",
+		ToFile:   "Current",
+		Context:  0,
+	}
+
+	text, err := difflib.GetUnifiedDiffString(diff)
+	if err != nil {
+		return errors.Wrap(err, "unified diff")
+	}
+
+	lines := strings.Split(text, "\n")
+
+	for _, line := range lines {
+		col := pprint.ColDiffText
+
+		if len(line) > 0 {
+			switch line[0] {
+			case '@':
+				col = pprint.ColDiffHeader
+			case '+':
+				col = pprint.ColDiffAdd
+			case '-':
+				col = pprint.ColDiffRemove
+			}
+		}
+
+		_, _ = col.Fprintln(w, line)
+	}
+
 	return nil
 }

@@ -14,11 +14,12 @@ import (
 )
 
 type Deploy struct {
-	Prog         *Program
-	Yes          bool
-	ManifestFile string
-	Stack        string
-	Tenant       string
+	Prog             *Program
+	Yes              bool
+	ManifestFile     string
+	Stack            string
+	Tenant           string
+	TemplateDiffOnly bool
 }
 
 func fileExists(path string) (bool, error) {
@@ -85,12 +86,17 @@ func (d *Deploy) ParseArgs(args []string) []string {
 	flags.FlagLong(&d.ManifestFile, "manifest", 'f', "manifest path")
 	flags.FlagLong(&d.Stack, "stack", 's', "stack to deploy")
 	flags.FlagLong(&d.Tenant, "tenant", 't', "tenant to deploy for")
+	diffOnly := flags.BoolLong("template-diff", 'd', "show template diff and exit")
 	flags.Parse(args)
 	rest := flags.Args()
 
 	if len(rest) != 0 {
 		fmt.Printf("Did not expect positional parameters.\n")
 		os.Exit(1)
+	}
+
+	if diffOnly != nil && *diffOnly {
+		d.TemplateDiffOnly = true
 	}
 
 	manifest, err := findManifest(d.ManifestFile)
@@ -146,6 +152,14 @@ func (prog *Program) Deploy(args []string) error {
 		err = deployer.Whoami(os.Stdout)
 		if err != nil {
 			return errors.Wrap(err, "whoami")
+		}
+
+		if d.TemplateDiffOnly {
+			err = deployer.TemplateDiff(os.Stdout)
+			if err != nil {
+				return errors.Wrap(err, "template diff")
+			}
+			continue
 		}
 
 		if !decision.Protected && !d.Yes {

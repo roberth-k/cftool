@@ -8,6 +8,7 @@ import (
 )
 
 var (
+	Text    = color.New(color.Reset)
 	Cyan    = color.New(color.FgCyan)
 	Green   = color.New(color.FgGreen)
 	Magenta = color.New(color.FgMagenta)
@@ -18,14 +19,18 @@ var (
 var colors = []*color.Color{Cyan, Green, Magenta, Red, Yellow}
 
 var (
-	ColField     = Cyan
-	ColAdd       = Green
-	ColModify    = Yellow
-	ColRemove    = Red
-	ColLogicalId = Magenta
-	ColWarning   = Yellow
-	ColError     = Red
-	ColVerbose   = Yellow
+	ColField      = Cyan
+	ColAdd        = Green
+	ColModify     = Yellow
+	ColRemove     = Red
+	ColLogicalId  = Magenta
+	ColWarning    = Yellow
+	ColError      = Red
+	ColVerbose    = Yellow
+	ColDiffHeader = Cyan
+	ColDiffAdd    = Green
+	ColDiffRemove = Red
+	ColDiffText   = Text
 )
 
 func EnableColor() {

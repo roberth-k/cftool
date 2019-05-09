@@ -356,15 +356,15 @@ func (d *Deployer) monitorStackUpdate(w io.Writer, startTime time.Time) (stack *
 	return stack, err
 }
 
-func (d *Deployer) Whoami(w io.Writer) error {
+func (d *Deployer) Whoami(w io.Writer) (*sts.GetCallerIdentityOutput, error) {
 	client := sts.New(d.sess)
 	id, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	pprint.Whoami(w, d.sess.Config.Region, id)
-	return nil
+	return id, nil
 }
 
 func (d *Deployer) TemplateDiff(w io.Writer) error {

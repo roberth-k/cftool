@@ -153,9 +153,14 @@ func (prog *Program) Deploy(args []string) error {
 
 		deployer.ShowDiff = d.ShowDiff
 
-		err = deployer.Whoami(os.Stdout)
+		id, err := deployer.Whoami(os.Stdout)
 		if err != nil {
 			return errors.Wrap(err, "whoami")
+		}
+
+		if decision.AccountId != "" && decision.AccountId != *id.Account {
+			fmt.Fprintf(os.Stdout, "\nTenant account mismatch. Has the correct profile been selected?\n")
+			os.Exit(1)
 		}
 
 		if !decision.Protected && !d.Yes {

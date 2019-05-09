@@ -5,7 +5,7 @@ ifeq ($(GOOS),windows)
 endif
 
 .PHONY: all
-all: build-target-all
+all: build build-target-all
 
 .PHONY: build
 build:

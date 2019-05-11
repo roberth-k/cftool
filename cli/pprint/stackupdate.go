@@ -39,7 +39,12 @@ func ChangeHeader(w io.Writer, action string, resourceType string, logicalResour
 
 func ChangeSet(w io.Writer, cs *cf.DescribeChangeSetOutput) {
 	if len(cs.Changes) == 0 {
-		fmt.Printf("\nNo changes.\n")
+		if *cs.Status != cf.ChangeSetStatusFailed {
+			fmt.Printf("\nOnly outputs have changed.\n")
+		} else {
+			fmt.Printf("\nNo changes.\n")
+		}
+
 		return
 	}
 

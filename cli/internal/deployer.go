@@ -390,9 +390,9 @@ func (d *Deployer) TemplateDiff(w io.Writer) error {
 
 	diff := difflib.UnifiedDiff{
 		A:        difflib.SplitLines(*out.TemplateBody),
-		B:        difflib.SplitLines(d.TemplateBody),
-		FromFile: "Original",
-		ToFile:   "Current",
+		B:        difflib.SplitLines(strings.ReplaceAll(d.TemplateBody, "\r", "")),
+		FromFile: "stack " + d.StackName,
+		ToFile:   "local template",
 		Context:  0,
 	}
 

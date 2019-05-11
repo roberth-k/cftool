@@ -391,8 +391,8 @@ func (d *Deployer) TemplateDiff(w io.Writer) error {
 	diff := difflib.UnifiedDiff{
 		A:        difflib.SplitLines(*out.TemplateBody),
 		B:        difflib.SplitLines(strings.ReplaceAll(d.TemplateBody, "\r", "")),
-		FromFile: "stack " + d.StackName,
-		ToFile:   "local template",
+		FromFile: "",
+		ToFile:   "",
 		Context:  0,
 	}
 
@@ -403,25 +403,27 @@ func (d *Deployer) TemplateDiff(w io.Writer) error {
 
 	lines := strings.Split(text, "\n")
 
-	for i, line := range lines {
-		if i > 0 {
-			fmt.Fprintf(w, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+
+		if len(line) < 1 {
+			continue
 		}
 
 		col := pprint.ColDiffText
 
-		if len(line) > 0 {
-			switch line[0] {
-			case '@':
-				col = pprint.ColDiffHeader
-			case '+':
-				col = pprint.ColDiffAdd
-			case '-':
-				col = pprint.ColDiffRemove
-			}
+		switch line[0] {
+		case '@':
+			col = pprint.ColDiffHeader
+		case '+':
+			col = pprint.ColDiffAdd
+		case '-':
+			col = pprint.ColDiffRemove
 		}
 
 		_, _ = col.Fprint(w, line)
+
+		fmt.Fprintf(w, "\n")
 	}
 
 	return nil

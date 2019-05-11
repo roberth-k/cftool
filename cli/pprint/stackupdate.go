@@ -38,6 +38,11 @@ func ChangeHeader(w io.Writer, action string, resourceType string, logicalResour
 }
 
 func ChangeSet(w io.Writer, cs *cf.DescribeChangeSetOutput) {
+	if len(cs.Changes) == 0 {
+		fmt.Printf("\nNo changes.\n")
+		return
+	}
+
 	for _, change := range cs.Changes {
 		fmt.Fprintf(w, "\n") // Spacing.
 

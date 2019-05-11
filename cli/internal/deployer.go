@@ -63,9 +63,16 @@ func NewDeployer(awsopts *AWSOptions, d *manifest.Decision) (*Deployer, error) {
 	}
 
 	sess, err := session.NewSessionWithOptions(opts)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "create aws session")
 	}
+
+	creds, err := WrapCredentialsWithCache(
+		opts.Profile,
+		sess.Config.Credentials)
+
+	sess.Config.Credentials = creds
 
 	client := cf.New(sess)
 

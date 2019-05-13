@@ -60,7 +60,8 @@ func TestPPrintChangeSet(t *testing.T) {
 					},
 				},
 			},
-			`+ AWS::Resource MyResource
+			`
++ AWS::Resource MyResource
 
 ~ AWS::ModifiedResource MyResource
     Change: MyAtt.MyProperty <- !GetAtt MyProp (conditional replacement)

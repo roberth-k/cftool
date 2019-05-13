@@ -7,9 +7,9 @@ import (
 )
 
 func checkParam(t *testing.T, input string, expectedKey string, expectedValue string) {
-	actual := ParseParameterFromCommandLine(input)
-	assert.Equal(t, expectedKey, *actual.ParameterKey)
-	assert.Equal(t, expectedValue, *actual.ParameterValue)
+	k, v := parseParameterString(input)
+	assert.Equal(t, expectedKey, k)
+	assert.Equal(t, expectedValue, v)
 }
 
 func checkFile(t *testing.T, path string, expect map[string]string) {

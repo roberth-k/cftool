@@ -24,12 +24,13 @@ func (list *List) ParseArgs(args []string) error {
 		return errors.Errorf("unexpected positional arguments: %+v", flags.Args())
 	}
 
-	manifest, err := findManifest(list.ManifestFile)
-	if err != nil {
-		return err
+	if list.ManifestFile == "" {
+		manifest, err := findManifest()
+		if err != nil {
+			return err
+		}
+		list.ManifestFile = manifest
 	}
-
-	list.ManifestFile = manifest
 	return nil
 }
 

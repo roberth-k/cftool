@@ -7,8 +7,8 @@ import (
 	"github.com/tetratom/cfn-tool/cli/internal"
 	"github.com/tetratom/cfn-tool/cli/pprint"
 	"github.com/tetratom/cfn-tool/manifest"
+	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 )
@@ -22,62 +22,89 @@ type Deploy struct {
 	ShowDiff     bool
 }
 
-func fileExists(path string) (bool, error) {
-	_, err := os.Stat(path)
+var fs struct {
+	Getwd       func() (cwd string, err error)
+	UserHomeDir func() (dir string, err error)
+	FileExists  func(path string) (ok bool, err error)
+	ExpandUser  func(path string) (out string, err error)
+	VolumeName  func(path string) (out string)
+}
 
-	if os.IsNotExist(err) {
-		return false, nil
+func init() {
+	fs.Getwd = func() (cwd string, err error) {
+		return os.Getwd()
+	}
+
+	fs.UserHomeDir = func() (dir string, err error) {
+		return os.UserHomeDir()
+	}
+
+	fs.FileExists = func(path string) (ok bool, err error) {
+		_, err = os.Stat(path)
+
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+
+		if err != nil {
+			return false, err
+		}
+
+		return true, nil
+	}
+
+	fs.ExpandUser = func(path string) (out string, err error) {
+		path = strings.TrimSpace(path)
+		if strings.HasPrefix(path, "~/") {
+			homedir, err := fs.UserHomeDir()
+			if err != nil {
+				return "", errors.Errorf("unable to determine user home directory")
+			}
+
+			path = homedir + path[1:]
+		}
+		return path, nil
+	}
+
+	fs.VolumeName = func(path string) (out string) {
+		return filepath.VolumeName(path)
+	}
+}
+
+func findManifest() (string, error) {
+	dir, filename := "", ".cfn-tool.yml"
+	cwd, err := fs.Getwd()
+	rootdir := fs.VolumeName(cwd)
+
+	if rootdir == "" {
+		rootdir = "/"
 	}
 
 	if err != nil {
-		return false, err
+		log.Panic(errors.Wrap(err, "getwd"))
 	}
 
-	return true, nil
-}
+	for {
+		dirabs := filepath.Join(cwd, dir)
+		fpath := filepath.Join(dirabs, filename)
 
-func findManifest(file string) (string, error) {
-	file = strings.TrimSpace(file)
-
-	if file == "" {
-		file = ".cfn-tool.yml"
-
-		for {
-			ok, err := fileExists(file)
-			if err != nil {
-				fmt.Printf("%s\n", errors.Wrapf(err, "check %s", file))
-				os.Exit(1)
-			}
-
-			if ok {
-				break
-			}
-
-			file = path.Join("..", file)
-			abspath, _ := filepath.Abs(file)
-			if filepath.Dir(abspath) == "/" {
-				fmt.Printf("unable to find .cfn-tool.yml\n")
-				os.Exit(1)
-			}
-		}
-	}
-
-	file = strings.TrimSpace(file)
-
-	if strings.HasPrefix(file, "~/") {
-		homedir, err := os.UserHomeDir()
+		ok, err := fs.FileExists(fpath)
 		if err != nil {
-			return "", errors.Errorf("unable to determine user home directory")
+			log.Panic(errors.Wrap(err, "get file exists"))
 		}
 
-		file = homedir + file[1:]
-	}
+		if ok {
+			return filepath.Join(dir, filename), nil
+		}
 
-	if ok, _ := fileExists(file); !ok {
-		return "", errors.Errorf("%s does not exist\n", file)
-	}
+		if dirabs == rootdir {
+			return "", errors.Errorf(
+				"manifest %s not found in any enclosing directory",
+				filename)
+		}
 
-	return file, nil
+		dir = filepath.Join(dir, "..")
+	}
 }
 
 func (d *Deploy) ParseArgs(args []string) []string {
@@ -99,13 +126,14 @@ func (d *Deploy) ParseArgs(args []string) []string {
 		d.ShowDiff = true
 	}
 
-	manifest, err := findManifest(d.ManifestFile)
-	if err != nil {
-		fmt.Printf(err.Error())
-		os.Exit(1)
+	if d.ManifestFile == "" {
+		manifest, err := findManifest()
+		if err != nil {
+			fmt.Printf(err.Error())
+			os.Exit(1)
+		}
+		d.ManifestFile = manifest
 	}
-
-	d.ManifestFile = manifest
 
 	return rest
 }

@@ -54,7 +54,7 @@ func (prog *Program) List(args []string) error {
 		return err
 	}
 
-	pprint.Field(os.Stdout, "Manifest", list.ManifestFile)
+	pprint.Field(w, "Manifest", list.ManifestFile)
 
 	fp, err := os.Open(list.ManifestFile)
 	if err != nil {
@@ -78,7 +78,7 @@ func (prog *Program) List(args []string) error {
 
 	sort.Sort(DeploymentsByStackName(all))
 
-	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
+	w := tabwriter.NewWriter(w, 1, 1, 1, ' ', 0)
 	fmt.Fprintf(w, "Stack\tTenant\n")
 	fmt.Fprintf(w, "---\t---\n")
 

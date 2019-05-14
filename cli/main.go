@@ -2,12 +2,15 @@ package main
 
 import (
 	"fmt"
+	"github.com/fatih/color"
 	"github.com/pborman/getopt/v2"
 	"github.com/pkg/errors"
 	"github.com/tetratom/cfn-tool/cli/internal"
 	"github.com/tetratom/cfn-tool/cli/pprint"
 	"os"
 )
+
+var w = color.Output
 
 type Program struct {
 	AWS     internal.AWSOptions
@@ -68,7 +71,7 @@ func main() {
 
 	if err != nil {
 		if errors.Cause(err) == internal.ErrAbortedByUser {
-			fmt.Fprintf(os.Stderr, "Aborted by user.\n")
+			fmt.Fprintf(w, "Aborted by user.\n")
 			os.Exit(1)
 		}
 
@@ -81,6 +84,6 @@ func main() {
 
 func (p *Program) Verbosef(msg string, args ...interface{}) {
 	if p.Verbose {
-		pprint.Verbosef(os.Stdout, msg, args...)
+		pprint.Verbosef(w, msg, args...)
 	}
 }

@@ -6,7 +6,6 @@ import (
 	"github.com/tetratom/cfn-tool/cli/internal"
 	"github.com/tetratom/cfn-tool/manifest"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"strings"
 )
@@ -81,7 +80,7 @@ func (prog *Program) Update(args []string) error {
 
 	deployer.ShowDiff = update.ShowDiff
 
-	err = deployer.Deploy(os.Stdout)
+	err = deployer.Deploy(w)
 	if err != nil {
 		return errors.Wrap(err, "deploy stack")
 	}

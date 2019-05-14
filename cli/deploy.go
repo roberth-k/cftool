@@ -142,7 +142,7 @@ func (prog *Program) Deploy(args []string) error {
 	d := Deploy{}
 	d.ParseArgs(args)
 
-	pprint.Field(os.Stdout, "Manifest", d.ManifestFile)
+	pprint.Field(w, "Manifest", d.ManifestFile)
 
 	fp, err := os.Open(d.ManifestFile)
 	if err != nil {
@@ -181,13 +181,13 @@ func (prog *Program) Deploy(args []string) error {
 
 		deployer.ShowDiff = d.ShowDiff
 
-		id, err := deployer.Whoami(os.Stdout)
+		id, err := deployer.Whoami(w)
 		if err != nil {
 			return errors.Wrap(err, "whoami")
 		}
 
 		if decision.AccountId != "" && decision.AccountId != *id.Account {
-			fmt.Fprintf(os.Stdout, "\nTenant account mismatch. Has the correct profile been selected?\n")
+			fmt.Fprintf(w, "\nTenant account mismatch. Has the correct profile been selected?\n")
 			os.Exit(1)
 		}
 
@@ -195,7 +195,7 @@ func (prog *Program) Deploy(args []string) error {
 			decision.Protected = true
 		}
 
-		err = deployer.Deploy(os.Stdout)
+		err = deployer.Deploy(w)
 		if err != nil {
 			return errors.Wrap(err, "deploy stack")
 		}

@@ -22,6 +22,6 @@ func (prog *Program) Whoami(args []string) error {
 		return errors.Wrap(err, "new deployer")
 	}
 
-	_, err = deployer.Whoami(os.Stdout)
+	_, err = deployer.Whoami(w)
 	return err
 }

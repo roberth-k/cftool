@@ -47,7 +47,7 @@ func (t *Tenant) ApplyTemplate(tpl *Template) (err error) {
 		}
 	}
 
-	if err == nil {
+	if err == nil && t.Default != nil {
 		err = t.Default.ApplyTemplate(tpl)
 	}
 

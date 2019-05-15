@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/pkg/errors"
-	"github.com/tetratom/cfn-tool/internal"
-	"github.com/tetratom/cfn-tool/manifest"
+	"github.com/tetratom/cftool/internal"
+	"github.com/tetratom/cftool/manifest"
 	"log"
 	"os"
 	"strings"

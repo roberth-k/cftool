@@ -1,4 +1,4 @@
-module github.com/tetratom/cfn-tool
+module github.com/tetratom/cftool
 
 go 1.12
 

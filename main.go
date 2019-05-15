@@ -9,21 +9,40 @@ import (
 	"github.com/tetratom/cftool/pprint"
 	"os"
 	"runtime"
+	"runtime/debug"
 )
 
 var w = color.Output
 
 var (
-	gitVersion = "?.?.?"
-	gitCommit  = "?????"
+	gitVersion = ""
+	gitCommit  = ""
 	progName   = "cftool"
 )
 
+func init() {
+	if gitVersion == "" {
+		buildInfo, ok := debug.ReadBuildInfo()
+		if ok {
+			gitVersion = buildInfo.Main.Version
+		}
+	}
+}
+
 func versionString() string {
-	return fmt.Sprintf(
-		"%s %s (%s) %s %s-%s",
-		progName, gitVersion, gitCommit,
-		runtime.Version(), runtime.GOOS, runtime.GOARCH)
+	s := progName
+
+	if gitVersion != "" {
+		s += " " + gitVersion
+	}
+
+	if gitCommit != "" {
+		s += " (" + gitCommit + ")"
+	}
+
+	s += fmt.Sprintf(" %s %s/%s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
+
+	return s
 }
 
 type Program struct {

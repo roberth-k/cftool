@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/pkg/errors"
-	"github.com/tetratom/cfn-tool/cli/internal"
+	"github.com/tetratom/cfn-tool/internal"
 	"github.com/tetratom/cfn-tool/manifest"
 	"log"
 	"os"

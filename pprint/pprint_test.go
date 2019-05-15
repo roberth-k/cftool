@@ -3,6 +3,7 @@ package pprint
 import (
 	cf "github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/stretchr/testify/require"
+	"github.com/tetratom/cfn-tool"
 	"strings"
 	"testing"
 )
@@ -12,7 +13,7 @@ func TestSmoke(t *testing.T) {
 
 	t.Run("Field", func(t *testing.T) {
 		w.Reset()
-		Field(w, "  Greetings", "programs!")
+		main.Field(w, "  Greetings", "programs!")
 		require.Equal(t, "  Greetings: programs!\n", w.String())
 	})
 
@@ -28,7 +29,7 @@ func TestSmoke(t *testing.T) {
 	for _, test := range changeActionTests {
 		t.Run("PrintChangeHeader: "+test.Action, func(t *testing.T) {
 			w.Reset()
-			ChangeHeader(w, test.Action, "AWS::Resource", "MyResource")
+			main.ChangeHeader(w, test.Action, "AWS::Resource", "MyResource")
 			require.Equal(t, test.Symbol+" AWS::Resource MyResource\n", w.String())
 		})
 	}

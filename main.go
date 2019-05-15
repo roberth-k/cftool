@@ -5,8 +5,8 @@ import (
 	"github.com/fatih/color"
 	"github.com/pborman/getopt/v2"
 	"github.com/pkg/errors"
-	"github.com/tetratom/cfn-tool/cli/internal"
-	"github.com/tetratom/cfn-tool/cli/pprint"
+	"github.com/tetratom/cfn-tool/internal"
+	"github.com/tetratom/cfn-tool/pprint"
 	"os"
 )
 

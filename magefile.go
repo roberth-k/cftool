@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 )
 
-const progName = "cfn-tool"
+const progName = "cftool"
 
 var Default = Install
 

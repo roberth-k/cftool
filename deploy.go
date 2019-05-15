@@ -72,7 +72,7 @@ func init() {
 }
 
 func findManifest() (string, error) {
-	dir, filename := "", ".cfn-tool.yml"
+	dir, filename := "", ".cftool.yml"
 	cwd, err := fs.Getwd()
 	rootdir := fs.VolumeName(cwd)
 

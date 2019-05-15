@@ -56,10 +56,10 @@ func TestFindManifest(t *testing.T) {
 		Expect   string
 		Ok       bool
 	}{
-		{"/home/bob", "/home/bob/.cfn-tool.yml", ".cfn-tool.yml", true},
-		{"C:/home/bob", "C:/home/bob/.cfn-tool.yml", ".cfn-tool.yml", true},
-		{"/home/bob", "", ".cfn-tool.yml", false},
-		{"C:/home/bob", "", ".cfn-tool.yml", false},
+		{"/home/bob", "/home/bob/.cftool.yml", ".cftool.yml", true},
+		{"C:/home/bob", "C:/home/bob/.cftool.yml", ".cftool.yml", true},
+		{"/home/bob", "", ".cftool.yml", false},
+		{"C:/home/bob", "", ".cftool.yml", false},
 	}
 
 	for _, test := range tests {

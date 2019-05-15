@@ -33,7 +33,7 @@ func getCacheDir() string {
 		homedir = filepath.Join(os.Getenv("HOME"), ".cache")
 	}
 
-	dirpath := filepath.Join(homedir, "cfn-tool", "credentials")
+	dirpath := filepath.Join(homedir, "cftool", "credentials")
 
 	_, err := os.Stat(dirpath)
 

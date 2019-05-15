@@ -16,7 +16,7 @@ var w = color.Output
 var (
 	gitVersion = "?.?.?"
 	gitCommit  = "?????"
-	progName   = "cfn-tool"
+	progName   = "cftool"
 )
 
 func versionString() string {

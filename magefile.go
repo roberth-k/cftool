@@ -3,8 +3,10 @@
 package main
 
 import (
+	"fmt"
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -14,7 +16,7 @@ const progName = "cfn-tool"
 var Default = Install
 
 func Install() error {
-	return sh.Run("go", "install")
+	return sh.Run("go", "install", "-ldflags", ldflags)
 }
 
 type Build mg.Namespace
@@ -26,6 +28,33 @@ var targets = []struct {
 	{"windows", "amd64"},
 	{"darwin", "amd64"},
 	{"linux", "amd64"},
+}
+
+var (
+	ldflags string
+)
+
+func init() {
+	gitVersion, err := sh.Output(
+		"git", "describe",
+		"--tags", "--always",
+		"--match", "v*")
+
+	if err != nil {
+		log.Panic("git describe: %v", err)
+	}
+
+	gitVersion = gitVersion[1:] // Strip 'v' prefix.
+
+	gitCommit, err := sh.Output("git", "rev-parse", "--short", "HEAD")
+
+	if err != nil {
+		log.Panic("git rev-parse: %v", err)
+	}
+
+	ldflags = fmt.Sprintf(
+		"-X main.gitVersion=%s -X main.gitCommit=%s -X main.progName=%s",
+		gitVersion, gitCommit, progName)
 }
 
 func (Build) All() error {
@@ -59,5 +88,8 @@ func build(goos string, goarch string) error {
 		out += ".exe"
 	}
 
-	return sh.RunWith(env, "go", "build", "-o", out)
+	return sh.RunWith(
+		env, "go", "build",
+		"-ldflags", ldflags,
+		"-o", out)
 }

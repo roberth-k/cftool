@@ -8,14 +8,29 @@ import (
 	"github.com/tetratom/cfn-tool/internal"
 	"github.com/tetratom/cfn-tool/pprint"
 	"os"
+	"runtime"
 )
 
 var w = color.Output
+
+var (
+	gitVersion = "?.?.?"
+	gitCommit  = "?????"
+	progName   = "cfn-tool"
+)
+
+func versionString() string {
+	return fmt.Sprintf(
+		"%s %s (%s) %s %s-%s",
+		progName, gitVersion, gitCommit,
+		runtime.Version(), runtime.GOOS, runtime.GOARCH)
+}
 
 type Program struct {
 	AWS     internal.AWSOptions
 	Verbose bool
 	Color   bool
+	Version bool
 }
 
 func (prog *Program) ParseFlags(argv []string) []string {
@@ -27,10 +42,16 @@ func (prog *Program) ParseFlags(argv []string) []string {
 	color := set.EnumLong(
 		"color", 'c', []string{"on", "off"}, "on",
 		"'on' or 'off'. pass 'off' to disable colors.")
+	version := set.BoolLong("version", 0, "show version and exit")
+
 	set.Parse(argv)
 
 	if color == nil || *color == "on" {
 		prog.Color = true
+	}
+
+	if version != nil {
+		prog.Version = *version
 	}
 
 	return set.Args()
@@ -40,13 +61,18 @@ func main() {
 	prog := Program{}
 	rest := prog.ParseFlags(os.Args)
 
+	if !prog.Color {
+		pprint.DisableColor()
+	}
+
+	if prog.Version {
+		fmt.Println(versionString())
+		os.Exit(0)
+	}
+
 	if len(rest) < 1 {
 		fmt.Printf("Expected a subcommand: deploy, update, or whoami.\n")
 		os.Exit(1)
-	}
-
-	if !prog.Color {
-		pprint.DisableColor()
 	}
 
 	var err error

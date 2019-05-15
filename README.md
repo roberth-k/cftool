@@ -1,6 +1,19 @@
 cfn-tool (CloudFormation Tool)
 ===
 
+# Testing
+
+```sh
+go test ./...
+```
+
+# Build
+
+```sh
+go run mage.go build:all   # Build for all targets into .build/$GOOS-$GOARCH.
+go run mage.go install     # Build for host and install to $GOPATH/bin.
+```
+
 # Manifest files
 
 A manifest file is a structure for recursively building up a deployment from a selection of tenants and stacks.

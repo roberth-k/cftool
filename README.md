@@ -1,13 +1,98 @@
-cfn-tool (CloudFormation Tool)
+cftool
 ===
 
-# Testing
+cftool ("CloudFormation Tool") is a boring command-line program for working with CloudFormation. It is mainly a tool for generating and visualising change sets ahead of stack deployments, cutting down on iteration time. It works with any existing CloudFormation templates, and does not apply any preprocessing of its own. 
+
+# Features
+
+## Update Stack
+
+This is essentially equivalent to `aws cloudformation create-change-set` followed by `aws cloudformation execute-change-set`, plus some `describe-stack` operations to monitor the status of a deployment. The program will exit when the stack update is complete. If an error is encountered and the stack rolls back, cftool prints these errors and waits for rollback completion. Stack outputs are written out at the end of a successful update.
+
+Example:
+
+```sh
+$ cftool -p live update \
+    -t templates/base/network.yml \
+    -p stacks/live/eu-west-1/live-base-network.json \
+    -n live-base-network
+```
+
+The default behaviour is to display a summary of the change set, and to prompt the user for confirmation before executing it. This can be bypassed with `-y/--yes`, although it will still ask if the stack doesn't exist at all.
+
+The optional `-d` parameter will display a diff comparing the current and updated templates if the operation is a stack update.
+
+See below for detailed information about usage. 
+
+## Deploy Stack from Manifest
+
+A manifest file (typically `.cftool.yml` at the root of an IaC repository) is used to declare a matrix of tenants and stacks. This manifest is a complete description of the templates, parameter files, stack names, and other information such as applicable AWS regions. The manifest supports templating to prevent repetition.
+
+Example:
+
+```sh
+$ cftool -p live deploy -t live -s network
+```
+
+See below for detailed information about usage.
+
+# Usage
+
+```sh
+$ cftool [general-options] [subcommand] [subcommand-options]
+```
+
+## General
+
+```
+-p/--profile PROFILE: override AWS profile.
+-r/--region REGION: override default AWS region.
+-e/--endpoint ENDPOINT: override CloudFormation endpoint.
+-v/--verbose: enable verbose output.
+-c/--color on|off: enable or disable colorized output (default: on). 
+```
+
+## `cftool update`
+
+```
+cftool [general-options] update -t FILE [-p FILE ...] [-P KEY=VALUE ...] [-n NAME] [-d] [-y]
+
+-t/--template FILE: path to CloudFormation template.
+-p/--parameter-file FILE: path to CloudFormation parameter value.
+-P/--parameter KEY=VALUE: override parameters directly.
+-n/--stack-name NAME: override stack name.
+-d/--diff: show a diff comparing the stack's template in CloudFormation to the template on disk. 
+-y/--yes: do not prompt for confirmation when updating the stack.
+```
+
+If `-n NAME` is not provided, it is derived based on the following rules:
+
+1. If there is exactly one `-p FILE`, take the name of the file without its extension.
+2. Otherwise take the name of the `-t FILE` without its extension.
+
+The `update` feature is optimised for a one-to-one correspondence between parameter files and stacks.  
+
+## `cftool deploy`
+
+```
+cftool [general-options] deploy -t TENANT -s STACK [-f FILE] [-d] [-y]
+
+-t/--tenant TENANT: tenant from the manifest.
+-s/--stack STACK: stack from the manifest.
+-f/--manifest FILE: path to manifest (default: .cfn-tool.yml in a parent directory).
+-d/--diff: show a diff comparing the stack's template in CloudFormation to the template on disk. 
+-y/--yes: do not prompt for confirmation when updating the stack.
+```
+
+# Development  
+
+## Test
 
 ```sh
 go test ./...
 ```
 
-# Build
+## Build
 
 ```sh
 go run mage.go build:all   # Build for all targets into .build/$GOOS-$GOARCH.
@@ -37,6 +122,7 @@ The broad structure of a manifest is:
 
 ```yaml
 Version: "1.0"
+
 Global:
     Constants:
       ExampleConstant: "ExampleConstantValue"

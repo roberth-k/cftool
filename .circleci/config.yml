@@ -1,6 +1,6 @@
-version: 2
+version: 2.1
 jobs:
-  build:
+  test:
     docker:
       - image: circleci/golang:1.12.5
 
@@ -15,3 +15,26 @@ jobs:
           key: go-mod-v1-{{ checksum "go.sum" }}
           paths:
             - "/go/pkg/mod"
+
+  release:
+    docker:
+      - image: circleci/golang:1.12.5
+
+    steps:
+      - checkout
+      - run: go run mage.go build:all
+      - run: .circleci/github-release.sh
+
+workflows:
+  version: 2
+  build_and_release:
+    jobs:
+      - test
+      - release:
+          requires:
+            - test
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+(-[ab][0-9]+)?$/

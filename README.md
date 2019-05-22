@@ -3,6 +3,11 @@ cftool
 
 cftool ("CloudFormation Tool") is a boring command-line program for working with CloudFormation. It is mainly a tool for generating and visualising change sets ahead of stack deployments, cutting down on iteration time. It works with any existing CloudFormation templates, and does not apply any preprocessing of its own. 
 
+# Installing
+
+- (A) Download a binary from the latest release.
+- (B) `go get github.com/tetratom/cftool`. The binary will be installed as `$GOPATH/bin/cftool`.
+
 # Features
 
 ## Update Stack

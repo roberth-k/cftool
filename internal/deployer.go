@@ -331,7 +331,9 @@ func (d *Deployer) monitorStackUpdate(w io.Writer, startTime time.Time) (stack *
 			}
 
 			for _, event := range events {
-				if strings.HasSuffix(*event.ResourceStatus, "_FAILED") {
+				if strings.HasSuffix(*event.ResourceStatus, "_FAILED") ||
+					strings.HasSuffix(*event.ResourceStatus, "_ROLLBACK_IN_PROGRESS") {
+
 					pprint.StackEvent(w, event)
 				}
 			}

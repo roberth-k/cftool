@@ -13,7 +13,6 @@ import (
 	"github.com/tetratom/cftool/manifest"
 	"github.com/tetratom/cftool/pprint"
 	"io"
-	"os"
 	"strings"
 	"time"
 )
@@ -45,7 +44,8 @@ type Deployer struct {
 func NewDeployer(awsopts *AWSOptions, d *manifest.Decision) (*Deployer, error) {
 	opts := session.Options{}
 
-	_ = os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
+	// Load configuration from ~/.aws/config.
+	opts.SharedConfigState = session.SharedConfigEnable
 
 	// Allow MFA code entry via standard input.
 	opts.AssumeRoleTokenProvider = stscreds.StdinTokenProvider

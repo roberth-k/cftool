@@ -43,6 +43,6 @@ for file in $(find . -name '*.zip'); do
     curl "${upload_url}?name=${name}" \
         -XPOST \
         -H "authorization: token ${GH_ACCESS_TOKEN}" \
-        -H "content-type: $(file -b --mime-type $file)" \
+        -H "content-type: application/zip" \
         --data-binary @$file
 done

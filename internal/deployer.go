@@ -54,7 +54,10 @@ func NewDeployer(awsopts *AWSOptions, d *manifest.Decision) (*Deployer, error) {
 		opts.Profile = awsopts.Profile
 	}
 
-	if d.Region != "" {
+	switch {
+	case awsopts.Region != "":
+		opts.Config.Region = aws.String(awsopts.Region)
+	case d.Region != "":
 		opts.Config.Region = aws.String(d.Region)
 	}
 

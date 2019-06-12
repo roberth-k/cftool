@@ -5,8 +5,11 @@ cftool ("CloudFormation Tool") is a boring command-line program for working with
 
 # Installing
 
-- (A) Download a binary from the latest release.
-- (B) `go get github.com/tetratom/cftool`. The binary will be installed as `$GOPATH/bin/cftool`.
+- [Download latest Linux binary](https://github.com/tetratom/cftool/releases/latest/download/linux-amd64.zip)
+- [Download latest Windows binary](https://github.com/tetratom/cftool/releases/latest/download/windows-amd64.zip)
+- [Download latest macOS binary](https://github.com/tetratom/cftool/releases/latest/download/darwin-amd64.zip)
+
+Alternatively, install it with `go get github.com/tetratom/cftool`.
 
 # Features
 

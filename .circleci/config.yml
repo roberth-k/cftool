@@ -23,7 +23,6 @@ jobs:
     steps:
       - checkout
       - run: go run mage.go build:all
-      - run: apt-get install -y file # temporary workaround
       - run: .circleci/github-release.sh
 
 workflows:

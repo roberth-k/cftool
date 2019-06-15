@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+//go:generate go run -tags codegen ./schema_codegen.go
+
 func validateSchema(schema []byte, data []byte) error {
 	schemaJson, err := yaml.YAMLToJSON(schema)
 	if err != nil {
@@ -37,120 +39,3 @@ func validateSchema(schema []byte, data []byte) error {
 
 	return err
 }
-
-var manifestSchema = []byte(`
-$schema: "http://json-schema.org/draft-07/schema#"
-type: object
-required:
-  - Version
-properties:
-  Version:
-    type: string
-    enum: ["1.0"]
-  Global:
-    type: object
-    properties:
-      Constants:
-        $ref: "#/definitions/TagSet"
-  Tenants:
-    type: array
-    items:
-      type: object
-      required:
-        - Name
-      properties:
-        Name:
-          type: string
-        Constants:
-          $ref: "#/definitions/TagSet"
-        Label:
-          type: string
-        Default:
-          $ref: "#/definitions/Stack"
-        Tags:
-          $ref: "#/definitions/TagSet"
-  Stacks:
-    type: array
-    items:
-      type: object
-      required:
-        - Name
-      properties:
-        Name:
-          type: string
-        Label:
-          type: string
-        Default:
-          $ref: "#/definitions/Stack"
-        Targets:
-          type: array
-          items:
-            $ref: "#/definitions/Target"
-
-definitions:
-  TagSet:
-    type: object
-    additionalProperties:
-      type: string
-
-  Parameter:
-    $oneOf:
-      - type: object
-        required:
-          - File
-        properties:
-          File:
-            type: string
-      - type: object
-        required:
-          - Key
-          - Value
-        properties:
-          Key:
-            type: string
-          Value:
-            type: string
-
-  Stack:
-    type: object
-    properties:
-      AccountId:
-        type: string
-      Parameters:
-        type: array
-        items:
-          $ref: "#/definitions/Parameter"
-      Protected:
-        type: boolean
-      Region:
-        type: string
-      StackName:
-        type: string
-      Template:
-        type: string
-
-  Target:
-    type: object
-    required:
-      - Tenant
-    properties:
-      Tenant:
-        type: string
-      Override:
-        $ref: "#/definitions/Stack"
-`)
-
-var parametersSchema = []byte(`
-$schema: "http://json-schema.org/draft-07/schema#"
-type: array
-items:
-  type: object
-  required:
-    - ParameterKey
-    - ParameterValue
-  properties:
-    ParameterKey:
-      type: string
-    ParameterValue:
-      type: string
-`)

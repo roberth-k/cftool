@@ -43,8 +43,9 @@ type Deployment struct {
 	Parameters   map[string]string
 	StackName    string
 	Protected    bool
-	Tenant       NameLabel
-	Stack        NameLabel
+	TenantName   string
+	Tags         map[string]string
+	Constants    map[string]string
 }
 
 type NameLabel struct {
@@ -143,8 +144,9 @@ func (m *Manifest) Process(input ProcessInput) ([]*Deployment, error) {
 					Parameters:   parameters,
 					StackName:    deployment.StackName,
 					Protected:    false,
-					Tenant:       NameLabel{tenant.Name, tenant.Label},
-					Stack:        NameLabel{stack.Name, stack.Label},
+					TenantName:   tenant.Name,
+					Constants:    tpl.Constants,
+					Tags:         tpl.Tags,
 				}
 
 				out = append(out, &decision)

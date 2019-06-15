@@ -41,7 +41,7 @@ func (d DeploymentsByStackName) Len() int {
 }
 
 func (d DeploymentsByStackName) Less(i, j int) bool {
-	return d[i].Stack.Name < d[j].Stack.Name
+	return d[i].StackName < d[j].StackName
 }
 
 func (d DeploymentsByStackName) Swap(i, j int) {
@@ -87,7 +87,7 @@ func (prog *Program) List(args []string) error {
 			fmt.Printf("\n")
 		}
 
-		fmt.Fprintf(w, "%s\t%s\n", dep.Stack.Name, dep.Tenant.Name)
+		fmt.Fprintf(w, "%s\t%s\n", dep.StackName, dep.TenantName)
 	}
 
 	_ = w.Flush()

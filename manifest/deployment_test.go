@@ -8,80 +8,75 @@ import (
 	"testing"
 )
 
-func readAll(filename string) string {
+func readAll(filename string) []byte {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
 
-	return string(data)
+	return data
 }
 
-func TestManifest_Process(t *testing.T) {
+func TestManifest_FindDeployment(t *testing.T) {
 	tests := []struct {
-		File   string
-		Input  ProcessInput
-		Expect []*Deployment
+		File        string
+		TenantLabel string
+		StackLabel  string
+		Expect      *Deployment
 	}{
 		{
-			File: "testdata/mystack-manifest.yml",
-			Input: ProcessInput{
-				Stack:  "mystack",
-				Tenant: "test",
-			},
-			Expect: []*Deployment{
-				{
-					AccountId: "222222222222",
-					Parameters: map[string]string{
-						"Foo":         "Bar",
-						"Environment": "test",
-						"SomeConst":   "const",
-					},
-					StackName:    "test-mystack",
-					TemplateBody: readAll("testdata/templates/mystack.yml"),
-					Region:       "eu-west-1",
-					Protected:    false,
-					TenantLabel:  "test",
-					Tags: map[string]string{
-						"Env": "test",
-						"Bar": "const",
-					},
-					Constants: map[string]string{
-						"LiveAccountId": "111111111111",
-						"TestAccountId": "222222222222",
-						"Some":          "const",
-					},
+			File:        "testdata/mystack-manifest.yml",
+			TenantLabel: "test",
+			StackLabel:  "mystack",
+			Expect: &Deployment{
+				AccountId: "222222222222",
+				Parameters: map[string]string{
+					"Foo":         "Bar",
+					"Environment": "test",
+					"SomeConst":   "const",
+				},
+				StackName:    "test-mystack",
+				TemplateBody: readAll("testdata/templates/mystack.yml"),
+				Region:       "eu-west-1",
+				Protected:    false,
+				StackLabel:   "mystack",
+				TenantLabel:  "test",
+				Tags: map[string]string{
+					"Env": "test",
+					"Bar": "const",
+				},
+				Constants: map[string]string{
+					"LiveAccountId": "111111111111",
+					"TestAccountId": "222222222222",
+					"Some":          "const",
 				},
 			},
 		},
 		{
-			File: "testdata/mystack-manifest.yml",
-			Input: ProcessInput{
-				Stack:  "mystack",
-				Tenant: "live-us",
-			},
-			Expect: []*Deployment{
-				{
-					AccountId: "111111111111",
-					Parameters: map[string]string{
-						"Foo":         "Bax",
-						"Environment": "live",
-						"SomeConst":   "bax",
-					},
-					StackName:    "live-mystack-us",
-					TemplateBody: readAll("testdata/templates/mystack.yml"),
-					Region:       "us-west-1",
-					Protected:    false,
-					TenantLabel:  "live-us",
-					Tags: map[string]string{
-						"Env": "live",
-						"Bar": "bax",
-					},
-					Constants: map[string]string{
-						"LiveAccountId": "111111111111",
-						"TestAccountId": "222222222222",
-						"Some":          "bax",
-					},
+			File:        "testdata/mystack-manifest.yml",
+			TenantLabel: "live-us",
+			StackLabel:  "mystack",
+			Expect: &Deployment{
+				AccountId: "111111111111",
+				Parameters: map[string]string{
+					"Foo":         "Bax",
+					"Environment": "live",
+					"SomeConst":   "bax",
+				},
+				StackName:    "live-mystack-us",
+				TemplateBody: readAll("testdata/templates/mystack.yml"),
+				Region:       "us-west-1",
+				Protected:    true,
+				StackLabel:   "mystack",
+				TenantLabel:  "live-us",
+				Tags: map[string]string{
+					"Env": "live",
+					"Bar": "bax",
+				},
+				Constants: map[string]string{
+					"LiveAccountId": "111111111111",
+					"TestAccountId": "222222222222",
+					"Some":          "bax",
 				},
 			},
 		},
@@ -94,8 +89,9 @@ func TestManifest_Process(t *testing.T) {
 			require.NoError(t, err)
 			m, err := Read(f)
 			require.NoError(t, err)
-			actual, err := m.Process(test.Input)
+			actual, found, err := m.FindDeployment(test.TenantLabel, test.StackLabel)
 			require.NoError(t, err)
+			require.True(t, found)
 			assert.Equal(t, test.Expect, actual)
 		})
 	}

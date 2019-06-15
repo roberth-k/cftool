@@ -37,7 +37,7 @@ Stacks:
     Default:
       Template: testdata/templates/mystack.yml
       Parameters:
-        - File: "testdata/stacks/{{.Tenant.Name}}/{{.Stack.Region}}/{{.Stack.StackName}}.json"
+        - File: "testdata/stacks/{{.TenantLabel}}/{{.Region}}/{{.StackName}}.json"
         - Key: Environment
           Value: "{{.Tags.Env}}"
         - Key: SomeConst

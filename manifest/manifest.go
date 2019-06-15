@@ -1,23 +1,12 @@
 package manifest
 
 import (
-	"github.com/pkg/errors"
+	"io/ioutil"
 	"strings"
 	"text/template"
 )
 
 const SupportedVersion = "1.1"
-
-type Manifest struct {
-	Version string
-	Global  Global
-	Tenants []*Tenant
-	Stacks  []*Stack
-}
-
-func (m *Manifest) AllDeployments() ([]*Deployment, error) {
-	return m.Process(ProcessInput{})
-}
 
 type Global struct {
 	Constants map[string]string
@@ -30,27 +19,6 @@ type Tenant struct {
 	Default   *Defaults
 	Constants map[string]string
 	Tags      map[string]string
-}
-
-func (t *Tenant) ApplyTemplate(tpl *Template) (err error) {
-	for k, v := range t.Constants {
-		tpl.Constants[k] = v
-	}
-
-	err = tpl.ApplyTo(&t.Label)
-
-	for k, v := range t.Tags {
-		if err == nil {
-			err = tpl.ApplyTo(&v)
-			t.Tags[k] = v
-		}
-	}
-
-	if err == nil && t.Default != nil {
-		err = t.Default.ApplyTemplate(tpl)
-	}
-
-	return err
 }
 
 type Stack struct {
@@ -85,35 +53,9 @@ type Defaults struct {
 	Protected *bool
 }
 
-func (d *Defaults) ApplyTemplate(tpl *Template) (err error) {
-	err = tpl.ApplyTo(&d.AccountId)
-
-	if err == nil {
-		err = tpl.ApplyTo(&d.Region)
-	}
-
-	if err == nil {
-		err = tpl.ApplyTo(&d.Template)
-	}
-
-	if err == nil {
-		err = tpl.ApplyTo(&d.StackName)
-	}
-
-	// Nested structures come last for templating.
-
-	for _, p := range d.Parameters {
-		if err == nil {
-			err = p.ApplyTemplate(tpl)
-		}
-	}
-
-	return err
-}
-
-func (d *Defaults) MergeFrom(other *Defaults) {
+func (d Defaults) MergeFrom(other *Defaults) Defaults {
 	if other == nil {
-		return
+		return d
 	}
 
 	add := func(to *string, from *string) {
@@ -134,6 +76,8 @@ func (d *Defaults) MergeFrom(other *Defaults) {
 	if other.Protected != nil {
 		d.Protected = other.Protected
 	}
+
+	return d
 }
 
 type Parameter struct {
@@ -143,42 +87,168 @@ type Parameter struct {
 	Value string
 }
 
-func (p *Parameter) ApplyTemplate(tpl *Template) (err error) {
-	err = tpl.ApplyTo(&p.File)
-
-	if err == nil {
-		err = tpl.ApplyTo(&p.Value)
-	}
-
-	return err
+type Manifest struct {
+	Version string
+	Global  Global
+	Tenants []*Tenant
+	Stacks  []*Stack
 }
 
-type Template struct {
-	Constants map[string]string
-	Tags      map[string]string
-	Tenant    *Tenant
-	Stack     *Defaults
-}
+func applyTemplate(text string, data interface{}) (string, error) {
+	parsed, err := template.
+		New("Template").
+		Option("missingkey=error").
+		Parse(text)
 
-func NewTemplate() *Template {
-	return &Template{
-		Constants: make(map[string]string),
-		Tags:      make(map[string]string),
-	}
-}
-
-func (tpl *Template) ApplyTo(text *string) error {
-	parsed, err := template.New("Template").Parse(*text)
 	if err != nil {
-		return errors.Wrapf(err, "parse template text \"%s\"", *text)
+		return "", err
 	}
 
 	w := strings.Builder{}
-	err = parsed.Execute(&w, tpl)
+	err = parsed.Execute(&w, data)
 	if err != nil {
-		return errors.Wrapf(err, "execute template \"%s\"", *text)
+		return "", err
 	}
 
-	*text = w.String()
-	return nil
+	return w.String(), nil
+}
+
+func extendMap(a, b map[string]string) {
+	for k, v := range b {
+		a[k] = v
+	}
+}
+
+func (m *Manifest) Deployment(
+	tenant *Tenant,
+	stack *Stack,
+	target *Target,
+) (result *Deployment, err error) {
+	def := Defaults{}.
+		MergeFrom(m.Global.Default).
+		MergeFrom(tenant.Default).
+		MergeFrom(stack.Default).
+		MergeFrom(target.Override)
+
+	// set up the initial values
+	d := Deployment{
+		TenantLabel: tenant.Label,
+		StackLabel:  stack.Label,
+	}
+
+	if def.Protected != nil {
+		d.Protected = *def.Protected
+	}
+
+	// externally we say it's the Deployment structure providing the data,
+	// but we build up this map instead to control the variables that
+	// are available. this is to enforce the order of templating operations.
+	tpl := make(map[string]interface{})
+	constants := make(map[string]string)
+	tags := make(map[string]string)
+
+	tpl["TenantLabel"] = d.TenantLabel
+	tpl["StackLabel"] = d.StackLabel
+
+	extendMap(constants, m.Global.Constants)
+	extendMap(constants, tenant.Constants)
+	tpl["Constants"] = constants
+	d.Constants = constants
+
+	extendMap(tags, m.Global.Tags)
+	extendMap(tags, tenant.Tags)
+	for k, v := range tags {
+		tags[k], err = applyTemplate(v, tpl)
+		if err != nil {
+			return
+		}
+	}
+	tpl["Tags"] = tags
+	d.Tags = tags
+
+	d.AccountId, err = applyTemplate(def.AccountId, tpl)
+	if err != nil {
+		return
+	}
+	tpl["AccountId"] = d.AccountId
+
+	d.Region, err = applyTemplate(def.Region, tpl)
+	if err != nil {
+		return
+	}
+	tpl["Region"] = d.Region
+
+	d.StackName = def.StackName
+	d.StackName, err = applyTemplate(def.StackName, tpl)
+	if err != nil {
+		return
+	}
+	tpl["StackName"] = d.StackName
+
+	templatePath, err := applyTemplate(def.Template, tpl)
+	if err != nil {
+		return
+	}
+	d.TemplateBody, err = ioutil.ReadFile(templatePath)
+	if err != nil {
+		return nil, err
+	}
+
+	d.Parameters = make(map[string]string)
+	for _, p := range def.Parameters {
+		switch {
+		case p.File != "":
+			path, err := applyTemplate(p.File, tpl)
+			if err != nil {
+				return nil, err
+			}
+
+			kvp, err := ReadParametersFromFile(path)
+			if err != nil {
+				return nil, err
+			}
+			extendMap(d.Parameters, kvp)
+		default:
+			d.Parameters[p.Key], err = applyTemplate(p.Value, tpl)
+			if err != nil {
+				return
+			}
+		}
+	}
+
+	return &d, nil
+}
+
+func (m *Manifest) FindDeployment(tenantLabel string, stackLabel string) (*Deployment, bool, error) {
+	var tenant *Tenant
+	for _, t := range m.Tenants {
+		if t.Label == tenantLabel {
+			tenant = t
+			break
+		}
+	}
+	if tenant == nil {
+		return nil, false, nil
+	}
+
+	var stack *Stack
+	var target *Target
+	for _, s := range m.Stacks {
+		if s.Label == stackLabel {
+			stack = s
+			for _, t := range stack.Targets {
+				if t.Tenant == tenantLabel {
+					target = t
+					break
+				}
+			}
+			break
+		}
+	}
+	if stack == nil || target == nil {
+		return nil, false, nil
+	}
+
+	d, err := m.Deployment(tenant, stack, target)
+	return d, true, err
 }

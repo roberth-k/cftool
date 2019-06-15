@@ -9,7 +9,6 @@ jobs:
       - restore_cache:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
-      - run: go test -i ./...
       - run: go test ./...
       - save_cache:
           key: go-mod-v1-{{ checksum "go.sum" }}
@@ -22,6 +21,9 @@ jobs:
 
     steps:
       - checkout
+      - restore_cache:
+        keys:
+          - go-mod-v1-{{ checksum "go.sum" }}
       - run: make
       - run: .circleci/github-release.sh
 

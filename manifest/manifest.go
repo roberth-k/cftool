@@ -6,7 +6,7 @@ import (
 	"text/template"
 )
 
-const Version1_0 = "1.0"
+const SupportedVersion = "1.1"
 
 type Manifest struct {
 	Version string `json:"Version"`
@@ -26,10 +26,9 @@ type Global struct {
 }
 
 type Tenant struct {
-	Name      string
-	Constants map[string]string
 	Label     string
 	Default   *Defaults
+	Constants map[string]string
 	Tags      map[string]string
 }
 
@@ -38,7 +37,7 @@ func (t *Tenant) ApplyTemplate(tpl *Template) (err error) {
 		tpl.Constants[k] = v
 	}
 
-	err = tpl.ApplyTo(&t.Name)
+	err = tpl.ApplyTo(&t.Label)
 
 	for k, v := range t.Tags {
 		if err == nil {
@@ -55,8 +54,6 @@ func (t *Tenant) ApplyTemplate(tpl *Template) (err error) {
 }
 
 type Stack struct {
-	// Label is the longer, human-readable summary of a stack.
-	Name    string
 	Label   string
 	Default *Defaults
 	Targets []*Target

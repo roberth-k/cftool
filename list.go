@@ -87,7 +87,7 @@ func (prog *Program) List(args []string) error {
 			fmt.Printf("\n")
 		}
 
-		fmt.Fprintf(w, "%s\t%s\n", dep.StackName, dep.TenantName)
+		fmt.Fprintf(w, "%s\t%s\n", dep.StackName, dep.TenantLabel)
 	}
 
 	_ = w.Flush()

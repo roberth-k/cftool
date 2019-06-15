@@ -5,7 +5,7 @@ required:
 properties:
   Version:
     type: string
-    enum: ["1.0"]
+    enum: ["1.1"]
   Global:
     type: object
     properties:
@@ -16,14 +16,12 @@ properties:
     items:
       type: object
       required:
-        - Name
+        - Label
       properties:
-        Name:
+        Label:
           type: string
         Constants:
           $ref: "#/definitions/TagSet"
-        Label:
-          type: string
         Default:
           $ref: "#/definitions/Stack"
         Tags:
@@ -33,10 +31,8 @@ properties:
     items:
       type: object
       required:
-        - Name
+        - Label
       properties:
-        Name:
-          type: string
         Label:
           type: string
         Default:

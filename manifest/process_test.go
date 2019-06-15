@@ -41,7 +41,7 @@ func TestManifest_Process(t *testing.T) {
 					TemplateBody: readAll("testdata/templates/mystack.yml"),
 					Region:       "eu-west-1",
 					Protected:    false,
-					TenantName:   "test",
+					TenantLabel:  "test",
 					Tags: map[string]string{
 						"Env": "test",
 						"Bar": "const",
@@ -72,7 +72,7 @@ func TestManifest_Process(t *testing.T) {
 					TemplateBody: readAll("testdata/templates/mystack.yml"),
 					Region:       "us-west-1",
 					Protected:    false,
-					TenantName:   "live-us",
+					TenantLabel:  "live-us",
 					Tags: map[string]string{
 						"Env": "live",
 						"Bar": "bax",

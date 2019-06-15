@@ -34,7 +34,7 @@ properties:
     items:
       type: object
       required:
-        - Name
+        - Label
       properties:
         Label:
           type: string
@@ -49,7 +49,7 @@ properties:
     items:
       type: object
       required:
-        - Name
+        - Label
       properties:
         Label:
           type: string

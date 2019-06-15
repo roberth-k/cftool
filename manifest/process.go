@@ -24,8 +24,8 @@ func Parse(reader io.Reader) (*Manifest, error) {
 		return nil, errors.Wrapf(err, "unmarshal manifest")
 	}
 
-	if m.Version != Version1_0 {
-		return nil, errors.Errorf("expected version %s", Version1_0)
+	if m.Version != SupportedVersion {
+		return nil, errors.Errorf("expected version %s", SupportedVersion)
 	}
 
 	return &m, nil
@@ -43,7 +43,8 @@ type Deployment struct {
 	Parameters   map[string]string
 	StackName    string
 	Protected    bool
-	TenantName   string
+	TenantLabel  string
+	StackLabel   string
 	Tags         map[string]string
 	Constants    map[string]string
 }
@@ -67,7 +68,7 @@ func (m *Manifest) Process(input ProcessInput) ([]*Deployment, error) {
 	}
 
 	for _, tenant := range m.Tenants {
-		if input.Tenant != "" && tenant.Name != input.Tenant {
+		if input.Tenant != "" && tenant.Label != input.Tenant {
 			continue
 		}
 
@@ -75,7 +76,7 @@ func (m *Manifest) Process(input ProcessInput) ([]*Deployment, error) {
 
 		err := tenant.ApplyTemplate(tpl)
 		if err != nil {
-			return nil, errors.Wrapf(err, "apply template to tenant %s", tenant.Name)
+			return nil, errors.Wrapf(err, "apply template to tenant %s", tenant.Label)
 		}
 
 		for k, v := range tenant.Tags {
@@ -83,7 +84,7 @@ func (m *Manifest) Process(input ProcessInput) ([]*Deployment, error) {
 		}
 
 		for _, stack := range m.Stacks {
-			if input.Stack != "" && stack.Name != input.Stack {
+			if input.Stack != "" && stack.Label != input.Stack {
 				continue
 			}
 
@@ -92,15 +93,15 @@ func (m *Manifest) Process(input ProcessInput) ([]*Deployment, error) {
 			}
 
 			for _, target := range stack.Targets {
-				if target.Tenant != tenant.Name {
+				if target.Tenant != tenant.Label {
 					continue
 				}
 
 				if target == nil {
 					return nil, errors.Errorf(
 						"no deployment of stack %s for tenant %s",
-						stack.Name,
-						tenant.Name)
+						stack.Label,
+						tenant.Label)
 				}
 
 				deployment := Defaults{}
@@ -144,7 +145,8 @@ func (m *Manifest) Process(input ProcessInput) ([]*Deployment, error) {
 					Parameters:   parameters,
 					StackName:    deployment.StackName,
 					Protected:    false,
-					TenantName:   tenant.Name,
+					TenantLabel:  tenant.Label,
+					StackLabel:   stack.Label,
 					Constants:    tpl.Constants,
 					Tags:         tpl.Tags,
 				}

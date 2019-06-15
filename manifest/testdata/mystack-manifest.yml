@@ -1,4 +1,4 @@
-Version: "1.0"
+Version: "1.1"
 
 Global:
   Constants:
@@ -7,16 +7,14 @@ Global:
     Some: "bax"
 
 Tenants:
-  - Name: live
-    Label: MyService EU (live)
+  - Label: live
     Default:
       Region: eu-west-1
       AccountId: "{{.Constants.LiveAccountId}}"
       Protected: true
     Tags:
       Env: live
-  - Name: live-us
-    Label: MyService US (live)
+  - Label: live-us
     Default:
       Region: us-west-1
       AccountId: "{{.Constants.LiveAccountId}}"
@@ -24,8 +22,7 @@ Tenants:
     Tags:
       Env: live
       Bar: "{{.Constants.Some}}"
-  - Name: test
-    Label: MyService EU (test)
+  - Label: test
     Constants:
       Some: const
     Default:
@@ -36,8 +33,7 @@ Tenants:
       Bar: "{{.Constants.Some}}"
 
 Stacks:
-  - Name: mystack
-    Label: My Stack
+  - Label: mystack
     Default:
       Template: testdata/templates/mystack.yml
       Parameters:

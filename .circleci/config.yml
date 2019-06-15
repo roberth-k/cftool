@@ -22,8 +22,8 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-        keys:
-          - go-mod-v1-{{ checksum "go.sum" }}
+          keys:
+            - go-mod-v1-{{ checksum "go.sum" }}
       - run: make
       - run: .circleci/github-release.sh
 

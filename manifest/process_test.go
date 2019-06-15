@@ -92,7 +92,7 @@ func TestManifest_Process(t *testing.T) {
 			f, err := os.Open(test.File)
 			defer f.Close()
 			require.NoError(t, err)
-			m, err := Parse(f)
+			m, err := Read(f)
 			require.NoError(t, err)
 			actual, err := m.Process(test.Input)
 			require.NoError(t, err)

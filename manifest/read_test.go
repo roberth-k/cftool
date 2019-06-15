@@ -18,7 +18,7 @@ func TestParseParameterFile(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Input, func(t *testing.T) {
-			actual, err := ParseParameterFile(test.Input)
+			actual, err := ReadParametersFromFile(test.Input)
 			require.NoError(t, err)
 			require.Equal(t, test.Expect, actual)
 		})

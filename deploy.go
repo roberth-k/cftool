@@ -149,7 +149,7 @@ func (prog *Program) Deploy(args []string) error {
 		return errors.Wrapf(err, "open %s", d.ManifestFile)
 	}
 
-	m, err := manifest.Parse(fp)
+	m, err := manifest.Read(fp)
 	fp.Close()
 	if err != nil {
 		return errors.Wrap(err, "parse manifest")

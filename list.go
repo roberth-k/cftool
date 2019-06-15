@@ -65,7 +65,7 @@ func (prog *Program) List(args []string) error {
 		return err
 	}
 
-	m, err := manifest.Parse(fp)
+	m, err := manifest.Read(fp)
 	fp.Close()
 	if err != nil {
 		return errors.Wrap(err, "parse manifest")

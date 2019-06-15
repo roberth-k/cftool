@@ -1,35 +1,9 @@
 package manifest
 
 import (
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
-	"io"
 	"io/ioutil"
 )
-
-func Parse(reader io.Reader) (*Manifest, error) {
-	data, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return nil, errors.Wrapf(err, "read manifest")
-	}
-
-	err = validateSchema(manifestSchema, data)
-	if err != nil {
-		return nil, errors.Wrap(err, "manifest schema validation failure")
-	}
-
-	var m Manifest
-	err = yaml.Unmarshal(data, &m)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unmarshal manifest")
-	}
-
-	if m.Version != SupportedVersion {
-		return nil, errors.Errorf("expected version %s", SupportedVersion)
-	}
-
-	return &m, nil
-}
 
 type ProcessInput struct {
 	Stack  string
@@ -125,7 +99,7 @@ func (m *Manifest) Process(input ProcessInput) ([]*Deployment, error) {
 				parameters := map[string]string{}
 				for _, param := range deployment.Parameters {
 					if param.File != "" {
-						kvp, err := ParseParameterFile(param.File)
+						kvp, err := ReadParametersFromFile(param.File)
 						if err != nil {
 							return nil, errors.Wrapf(err, "parse parameter file")
 						}

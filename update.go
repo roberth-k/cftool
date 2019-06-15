@@ -117,7 +117,7 @@ func (update *Update) parseAllParameters() (map[string]string, error) {
 	for _, path := range files {
 		update.Prog.Verbosef("reading parameters from %s...", path)
 
-		paramsFromFile, err := parseParameterFile(path)
+		paramsFromFile, err := manifest.ReadParametersFromFile(path)
 
 		if err != nil {
 			return nil, err

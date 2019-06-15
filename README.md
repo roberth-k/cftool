@@ -136,36 +136,37 @@ Version: "1.0"
 Global:
     Constants:
       ExampleConstant: "ExampleConstantValue"
-    Default: {} # Deployment.
+    Default: {}
       
 Tenants:
-    - Name: ExampleTenant
-      Label: Example Tenant Label # Supports template.
-      Default: {} # Deployment
+    - Label: mytenant
+      Default: {}
       Tags:
-        ExampleTag: "ExampleTagValue" # Supports template.
+        ExampleTag: "ExampleTagValue"
         
 Stacks:
-    - Name: ExampleStackName
-      Label: Example Stack
-      Default: {} # Deployment.
+    - Label: mystack
+      Default: {}
       Targets:
         - Tenant: ExampleTenant
-          Override: {} # Deployment
+          Override: {}
 ```
 
 The final deployment is built up by merging, in this order, the `Default` fields of Global, the selected tenant, and the selected stack, and finally with the `Override` of the deployment.
 
 ### Template syntax
 
-Some fields (see comments above) support template replacement using Go template syntax. Replacements are run from the following structure:
+Some fields support template substitution using `text/template` syntax. Replacements are applied after tenant and stack selection. The following structure is an example of the available values. Note that with the exception of the first three, fields become available for templating in the order given: for example, `.AccountId` can refer to values from `.Tags`, but not `.Region`. 
 
 ```go
 type Template struct {
-	Constants  map[string]string
-	Tags       map[string]string
-	Tenant     *Tenant
-	Deployment *Deployment
+	Constants   map[string]string // NO templating support.
+	TenantLabel string // NO templating support
+	StackLabel  string // NO templating support
+	Tags        map[string]string
+	AccountId   string
+	Region      string
+	StackName   string
 }
 ```
 

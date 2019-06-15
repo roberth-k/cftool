@@ -34,14 +34,14 @@ func (status StackStatus) IsTerminal() bool {
 }
 
 type Deployer struct {
-	*manifest.Decision
+	*manifest.Deployment
 	sess          *session.Session
 	client        *cf.CloudFormation
 	ChangeSetName string
 	ShowDiff      bool
 }
 
-func NewDeployer(awsopts *AWSOptions, d *manifest.Decision) (*Deployer, error) {
+func NewDeployer(awsopts *AWSOptions, d *manifest.Deployment) (*Deployer, error) {
 	opts := session.Options{}
 
 	// Load configuration from ~/.aws/config.
@@ -79,7 +79,7 @@ func NewDeployer(awsopts *AWSOptions, d *manifest.Decision) (*Deployer, error) {
 
 	client := cf.New(sess)
 
-	return &Deployer{Decision: d, sess: sess, client: client}, nil
+	return &Deployer{Deployment: d, sess: sess, client: client}, nil
 }
 
 func (d *Deployer) Deploy(w io.Writer) error {

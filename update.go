@@ -64,7 +64,7 @@ func (prog *Program) Update(args []string) error {
 		return errors.Wrapf(err, "read %s", update.TemplateFile)
 	}
 
-	decision := manifest.Decision{
+	decision := manifest.Deployment{
 		AccountId:    "",
 		Region:       "",
 		TemplateBody: string(templateBody),

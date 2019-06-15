@@ -21,7 +21,7 @@ func TestManifest_Process(t *testing.T) {
 	tests := []struct {
 		File   string
 		Input  ProcessInput
-		Expect []*Decision
+		Expect []*Deployment
 	}{
 		{
 			File: "testdata/mystack-manifest.yml",
@@ -29,7 +29,7 @@ func TestManifest_Process(t *testing.T) {
 				Stack:  "mystack",
 				Tenant: "test",
 			},
-			Expect: []*Decision{
+			Expect: []*Deployment{
 				{
 					AccountId: "222222222222",
 					Parameters: map[string]string{
@@ -52,7 +52,7 @@ func TestManifest_Process(t *testing.T) {
 				Stack:  "mystack",
 				Tenant: "live-us",
 			},
-			Expect: []*Decision{
+			Expect: []*Deployment{
 				{
 					AccountId: "111111111111",
 					Parameters: map[string]string{

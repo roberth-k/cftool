@@ -16,7 +16,7 @@ func (prog *Program) Whoami(args []string) error {
 		os.Exit(1)
 	}
 
-	decision := manifest.Decision{}
+	decision := manifest.Deployment{}
 	deployer, err := internal.NewDeployer(&prog.AWS, &decision)
 	if err != nil {
 		return errors.Wrap(err, "new deployer")

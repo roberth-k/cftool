@@ -34,7 +34,7 @@ func (list *List) ParseArgs(args []string) error {
 	return nil
 }
 
-type DeploymentsByStackName []*manifest.Decision
+type DeploymentsByStackName []*manifest.Deployment
 
 func (d DeploymentsByStackName) Len() int {
 	return len(d)

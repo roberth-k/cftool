@@ -36,7 +36,7 @@ type ProcessInput struct {
 	Tenant string
 }
 
-type Decision struct {
+type Deployment struct {
 	AccountId    string
 	Region       string
 	TemplateBody string
@@ -52,8 +52,8 @@ type NameLabel struct {
 	Label string
 }
 
-func (m *Manifest) Process(input ProcessInput) ([]*Decision, error) {
-	out := []*Decision{}
+func (m *Manifest) Process(input ProcessInput) ([]*Deployment, error) {
+	out := []*Deployment{}
 
 	tpl := NewTemplate()
 
@@ -102,7 +102,7 @@ func (m *Manifest) Process(input ProcessInput) ([]*Decision, error) {
 						tenant.Name)
 				}
 
-				deployment := Deployment{}
+				deployment := Defaults{}
 				deployment.MergeFrom(m.Global.Default)
 				deployment.MergeFrom(tenant.Default)
 				deployment.MergeFrom(stack.Default)
@@ -136,7 +136,7 @@ func (m *Manifest) Process(input ProcessInput) ([]*Decision, error) {
 					}
 				}
 
-				decision := Decision{
+				decision := Deployment{
 					AccountId:    deployment.AccountId,
 					Region:       deployment.Region,
 					TemplateBody: string(templateBody),

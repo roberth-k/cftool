@@ -15,21 +15,21 @@ type Manifest struct {
 	Stacks  []*Stack
 }
 
-func (m *Manifest) AllDeployments() ([]*Decision, error) {
+func (m *Manifest) AllDeployments() ([]*Deployment, error) {
 	return m.Process(ProcessInput{})
 }
 
 type Global struct {
 	Constants map[string]string
 	Tags      map[string]string
-	Default   *Deployment
+	Default   *Defaults
 }
 
 type Tenant struct {
 	Name      string
 	Constants map[string]string
 	Label     string
-	Default   *Deployment
+	Default   *Defaults
 	Tags      map[string]string
 }
 
@@ -58,17 +58,17 @@ type Stack struct {
 	// Label is the longer, human-readable summary of a stack.
 	Name    string
 	Label   string
-	Default *Deployment
+	Default *Defaults
 	Targets []*Target
 	Tags    map[string]string
 }
 
 type Target struct {
 	Tenant   string
-	Override *Deployment
+	Override *Defaults
 }
 
-type Deployment struct {
+type Defaults struct {
 	// AccountId is an AWS account ID to check the profile against.
 	AccountId string
 
@@ -88,7 +88,7 @@ type Deployment struct {
 	Protected *bool
 }
 
-func (d *Deployment) ApplyTemplate(tpl *Template) (err error) {
+func (d *Defaults) ApplyTemplate(tpl *Template) (err error) {
 	err = tpl.ApplyTo(&d.AccountId)
 
 	if err == nil {
@@ -114,7 +114,7 @@ func (d *Deployment) ApplyTemplate(tpl *Template) (err error) {
 	return err
 }
 
-func (d *Deployment) MergeFrom(other *Deployment) {
+func (d *Defaults) MergeFrom(other *Defaults) {
 	if other == nil {
 		return
 	}
@@ -160,7 +160,7 @@ type Template struct {
 	Constants map[string]string
 	Tags      map[string]string
 	Tenant    *Tenant
-	Stack     *Deployment
+	Stack     *Defaults
 }
 
 func NewTemplate() *Template {

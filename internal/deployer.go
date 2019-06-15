@@ -220,7 +220,7 @@ func (d *Deployer) createChangeSet(create bool) (*cf.DescribeChangeSetOutput, er
 		StackName:     aws.String(d.StackName),
 		ChangeSetName: aws.String(d.ChangeSetName),
 		Parameters:    make([]*cf.Parameter, len(d.Parameters)),
-		TemplateBody:  aws.String(d.TemplateBody),
+		TemplateBody:  aws.String(string(d.TemplateBody)),
 		ChangeSetType: aws.String(changeSetType),
 		Capabilities: []*string{
 			aws.String("CAPABILITY_IAM"),
@@ -401,8 +401,10 @@ func (d *Deployer) TemplateDiff(w io.Writer) error {
 	}
 
 	diff := difflib.UnifiedDiff{
-		A:        difflib.SplitLines(*out.TemplateBody),
-		B:        difflib.SplitLines(strings.ReplaceAll(d.TemplateBody, "\r", "")),
+		A: difflib.SplitLines(*out.TemplateBody),
+		B: difflib.SplitLines(
+			strings.ReplaceAll(
+				string(d.TemplateBody), "\r", "")),
 		FromFile: "",
 		ToFile:   "",
 		Context:  0,

@@ -67,7 +67,7 @@ func (prog *Program) Update(args []string) error {
 	decision := manifest.Deployment{
 		AccountId:    "",
 		Region:       "",
-		TemplateBody: string(templateBody),
+		TemplateBody: templateBody,
 		Parameters:   parameters,
 		StackName:    stackName,
 		Protected:    !update.Yes,

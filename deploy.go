@@ -160,21 +160,22 @@ func (prog *Program) Deploy(args []string) error {
 		return errors.Wrap(err, "chdir")
 	}
 
-	decisions, err := m.Process(manifest.ProcessInput{
-		Stack:  d.Stack,
-		Tenant: d.Tenant,
-	})
+	deployment, ok, err := m.FindDeployment(d.Stack, d.Tenant)
+	deployments := []*manifest.Deployment{}
+	if ok {
+		deployments = append(deployments, deployment)
+	}
 
 	if err != nil {
 		return errors.Wrap(err, "process manifest")
 	}
 
-	for i, decision := range decisions {
+	for i, deployment := range deployments {
 		if i > 0 {
 			fmt.Printf("\n")
 		}
 
-		deployer, err := internal.NewDeployer(&prog.AWS, decision)
+		deployer, err := internal.NewDeployer(&prog.AWS, deployment)
 		if err != nil {
 			return errors.Wrap(err, "new deployer")
 		}
@@ -186,13 +187,13 @@ func (prog *Program) Deploy(args []string) error {
 			return errors.Wrap(err, "whoami")
 		}
 
-		if decision.AccountId != "" && decision.AccountId != *id.Account {
+		if deployment.AccountId != "" && deployment.AccountId != *id.Account {
 			fmt.Fprintf(w, "\nTenant account mismatch. Has the correct profile been selected?\n")
 			os.Exit(1)
 		}
 
-		if !decision.Protected && !d.Yes {
-			decision.Protected = true
+		if !deployment.Protected && !d.Yes {
+			deployment.Protected = true
 		}
 
 		err = deployer.Deploy(w)

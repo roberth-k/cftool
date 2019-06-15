@@ -7,7 +7,7 @@ import (
 )
 
 func TestFsFileExists(t *testing.T) {
-	ok, err := fs.FileExists("testdata/ParameterFile1.json")
+	ok, err := fs.FileExists("testdata/exists")
 	require.NoError(t, err)
 	require.True(t, ok)
 

@@ -5,14 +5,22 @@ import (
 	"testing"
 )
 
-func TestParseParameterFile(t *testing.T) {
+func TestReadParametersFromFile(t *testing.T) {
 	tests := []struct {
 		Input  string
 		Expect map[string]string
 	}{
 		{
+			"testdata/EmptyParameterFile.json",
+			map[string]string{},
+		},
+		{
 			"testdata/parameters1.json",
 			map[string]string{"Foo": "Bar"},
+		},
+		{
+			"testdata/ParameterFile1.json",
+			map[string]string{"A": "B", "C": "D"},
 		},
 	}
 

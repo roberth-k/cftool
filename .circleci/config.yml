@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - checkout
-      - run: go run mage.go build:all
+      - run: make
       - run: .circleci/github-release.sh
 
 workflows:

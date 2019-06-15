@@ -102,12 +102,11 @@ go test ./...
 
 ## Build
 
-```sh
-go run mage.go build:all   # Build for all targets into .build/$GOOS-$GOARCH.
-go run mage.go install     # Build for host and install to $GOPATH/bin.
-```
+Run `go generate ./manifest` if the schemas have been updated. The following will build cftool for all target architectures.
 
-Run `go generate ./manifest` if updating the schemas.
+```sh
+make
+```
 
 # Manifest files
 

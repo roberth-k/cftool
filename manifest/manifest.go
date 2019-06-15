@@ -9,7 +9,7 @@ import (
 const SupportedVersion = "1.1"
 
 type Manifest struct {
-	Version string `json:"Version"`
+	Version string
 	Global  Global
 	Tenants []*Tenant
 	Stacks  []*Stack

@@ -1,17 +1,55 @@
 cftool
 ===
 
-cftool ("CloudFormation Tool") is a boring command-line program for working with CloudFormation. It is mainly a tool for generating and visualising change sets ahead of stack deployments, cutting down on iteration time. It works with any existing CloudFormation templates, and does not apply any preprocessing of its own. 
+cftool ("CloudFormation Tool") is a boring command-line program for working with CloudFormation. It is mainly a tool for reviewing change sets, as well as monitoring the progression of a stack update from the command line. It works with any existing CloudFormation templates, and does not apply any preprocessing of its own. 
 
 # Installing
 
 - [Download latest Linux binary](https://github.com/tetratom/cftool/releases/latest/download/linux-amd64.zip)
 - [Download latest Windows binary](https://github.com/tetratom/cftool/releases/latest/download/windows-amd64.zip)
 - [Download latest macOS binary](https://github.com/tetratom/cftool/releases/latest/download/darwin-amd64.zip)
+- Alternatively: `go get github.com/tetratom/cftool`.
 
-Alternatively, install it with `go get github.com/tetratom/cftool`.
+# Table of Contents
 
-# Features
+- [Installing](#installing)
+- [Table of Contents](#table-of-contents)
+- [Quick Start](#quick-start)
+- [Development](#development)
+- [Usage](#usage)
+- [Features and Usage](#features-and-usage)
+    - [General Options](#general-options)
+    - [Update Stack](#update-stack)
+    - [Deploy Stack from Manifest](#deploy-stack-from-manifest)
+- [Manifest Files](#manifest-files)
+    
+# Quick Start
+
+```bash
+$ cftool --profile MyCompany update -t MyTemplate.yml -p MyParameters.json -n my-stack
+```
+
+# Development
+
+- Run `go generate ./manifest` if the schemas have been updated.
+- Test with `go test ./...`.
+- Run `make` to build for all targets. Output will be written to `.build`.
+
+# Features and Usage
+
+```sh
+$ cftool [general-options] [subcommand] [subcommand-options]
+```
+
+### General Options
+
+```
+-p/--profile PROFILE: override AWS profile.
+-r/--region REGION: override default AWS region.
+-e/--endpoint ENDPOINT: override CloudFormation endpoint.
+-v/--verbose: enable verbose output.
+-c/--color on|off: enable or disable colorized output (default: on). 
+```
 
 ## Update Stack
 
@@ -30,37 +68,7 @@ The default behaviour is to display a summary of the change set, and to prompt t
 
 The optional `-d` parameter will display a diff comparing the current and updated templates if the operation is a stack update.
 
-See below for detailed information about usage. 
-
-## Deploy Stack from Manifest
-
-A manifest file (typically `.cftool.yml` at the root of an IaC repository) is used to declare a matrix of tenants and stacks. This manifest is a complete description of the templates, parameter files, stack names, and other information such as applicable AWS regions. The manifest supports templating to prevent repetition.
-
-Example:
-
-```sh
-$ cftool -p live deploy -t live -s network
-```
-
-See below for detailed information about usage.
-
-# Usage
-
-```sh
-$ cftool [general-options] [subcommand] [subcommand-options]
-```
-
-## General
-
-```
--p/--profile PROFILE: override AWS profile.
--r/--region REGION: override default AWS region.
--e/--endpoint ENDPOINT: override CloudFormation endpoint.
--v/--verbose: enable verbose output.
--c/--color on|off: enable or disable colorized output (default: on). 
-```
-
-## `cftool update`
+### Usage
 
 ```
 cftool [general-options] update -t FILE [-p FILE ...] [-P KEY=VALUE ...] [-n NAME] [-d] [-y]
@@ -78,9 +86,19 @@ If `-n NAME` is not provided, it is derived based on the following rules:
 1. If there is exactly one `-p FILE`, take the name of the file without its extension.
 2. Otherwise take the name of the `-t FILE` without its extension.
 
-The `update` feature is optimised for a one-to-one correspondence between parameter files and stacks.  
+The `update` feature is optimised for a one-to-one correspondence between parameter files and stacks.   
 
-## `cftool deploy`
+## Deploy Stack from Manifest
+
+A manifest file (typically `.cftool.yml` at the root of a repository) is used to declare a matrix of tenants and stacks. This manifest is a complete description of the templates, parameter files, stack names, and other information such as applicable AWS regions. The manifest supports templating to prevent repetition.
+
+Example:
+
+```sh
+$ cftool -p live deploy -t live -s network
+```
+
+### Usage
 
 ```
 cftool [general-options] deploy -t TENANT -s STACK [-f FILE] [-d] [-y]
@@ -92,27 +110,13 @@ cftool [general-options] deploy -t TENANT -s STACK [-f FILE] [-d] [-y]
 -y/--yes: do not prompt for confirmation when updating the stack.
 ```
 
-# Development  
-
-## Test
-
-```sh
-go test ./...
-```
-
-## Build
-
-Run `go generate ./manifest` if the schemas have been updated. The following will build cftool for all target architectures.
-
-```sh
-make
-```
-
 # Manifest files
 
-A manifest file is a structure for recursively building up a deployment from a selection of tenants and stacks.
+A manifest file (`.cftool.yml`) is a cookbook for setting up and updating stacks. `cftool deploy` will look for a manifest in a parent directory.
 
-A deployment consists of the following fields:
+It broadly consists of two major sections: (1) tenants; and (2) stacks. By running `cftool deploy -t TENANT -s STACK`, the tenant and stack settings are merged together to form a _deployment_, which describes the template, parameter files, name, region, and other properties of a stack. This allows you to make use of a standard structure and vocabulary when initiating stack changes, and can be used to smooth out irritating inconsistencies (e.g. differences in naming convention for the same stack in different regions).
+
+Here is an example manifest. The full structure is defined in JSON Schema form by [manifest/schemas/manifest.yml](./manifest/schemas/manifest.yml).
 
 ```yaml
 AccountId: "111111111111" # Supports template.
@@ -125,37 +129,68 @@ Protected: false
 Region: eu-west-1 # Supports template.
 StackName: "my-stack" # Supports template.
 Template: "my-template.yml" # Supports template.
-```
 
-The broad structure of a manifest is:
-
-```yaml
-Version: "1.0"
+Version: "1.1"
 
 Global:
-    Constants:
-      ExampleConstant: "ExampleConstantValue"
-    Default: {}
-      
+  Constants:
+    LiveAccountId: "111111111111"
+    TestAccountId: "222222222222"
+  Default:
+    Region: eu-west-1
+    Parameters:
+      - Key: Environment
+        Value: "{{.Tags.Env}}"
+
 Tenants:
-    - Label: mytenant
-      Default: {}
-      Tags:
-        ExampleTag: "ExampleTagValue"
-        
+  - Label: live
+    Default:
+      AccountId: "{{.Constants.LiveAccountId}}"
+      Protected: true
+    Tags:
+      Env: live
+  - Label: test
+    Constants:
+      Some: const
+    Default:
+      AccountId: "{{.Constants.TestAccountId}}"
+    Tags:
+      Env: test
+
 Stacks:
-    - Label: mystack
-      Default: {}
-      Targets:
-        - Tenant: ExampleTenant
-          Override: {}
+  - Label: mystack
+    Default:
+      Template: "templates/{{.StackLabel}}.yml"
+      Parameters:
+        - File: "stacks/{{.TenantLabel}}/{{.Region}}/{{.StackName}}.json"
+      StackName: "{{.Tags.Env}}-mystack"
+    Targets:
+      - Tenant: live
+      - Tenant: test
+        Override:
+          StackName: "testt-mystack"
 ```
 
-The final deployment is built up by merging, in this order, the `Default` fields of Global, the selected tenant, and the selected stack, and finally with the `Override` of the deployment.
+If the above were a real manifest linked to real templates, an invocation such as `cftool deploy -t live -s mystack` would assemble the following deployment:
 
-### Template syntax
+```yaml
+Constants:
+  LiveAccountId: "111111111111"
+  TestAccountId: "222222222222"
+TenantLabel: "live"
+StackLabel: "mystack"
+Tags:
+  Env: "live"
+AccountId: "111111111111"
+Region: "eu-west-1"
+StackName: "live-mystack"
+TemplateURL: "templates/mystack.yml"
+Parameters:
+  Environment: "live"
+  # Remaining parameters derived from stacks/live/eu-west-1/live-mystack.json.
+```
 
-Some fields support template substitution using `text/template` syntax. Replacements are applied after tenant and stack selection. The following structure is an example of the available values. Note that with the exception of the first three, fields become available for templating in the order given: for example, `.AccountId` can refer to values from `.Tags`, but not `.Region`. 
+Templating allows for some data reuse using the `text/template` syntax. Replacements are applied after tenant and stack selection by merging globals, then tenant, then stack. The following structure is an example of the available values. Note that with the exception of the first three, fields become available for templating in the order given: for example, `.AccountId` can refer to values from `.Tags`, but not `.Region`. 
 
 ```go
 type Template struct {
@@ -169,6 +204,4 @@ type Template struct {
 }
 ```
 
-`"{{.Tags.Env}}-mystack"` is an example of Go templates in use; more can be found in the [manifest/testdata](manifest/testdata) directory. Note that a templated value will probably have to be surrounded by quotation marks to de-conflict YAML.
-
-Values are available for templating in deployment merge order. The structure being substituted is available when substituting the structure itself (e.g. other deployment fields can reference the `StackName`). Substitution runs on nested fields last.
+More examples can be found in the [manifest/testdata](manifest/testdata) directory. Note that a templated value will have to be surrounded by quotation marks to de-conflict YAML.

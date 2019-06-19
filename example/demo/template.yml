@@ -1,0 +1,20 @@
+Parameters:
+  Environment:
+    Type: String
+
+Outputs:
+  QueueArn:
+    Value: !GetAtt Queue.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-QueueArn"
+
+Resources:
+  Queue:
+    Type: AWS::SQS::Queue
+    Properties:
+      DelaySeconds: 10
+
+  Topic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: MyTopic

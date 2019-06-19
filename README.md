@@ -32,6 +32,8 @@ $ cftool --help
 $ cftool --profile MyCompany update -t MyTemplate.yml -p MyParameters.json -n my-stack
 ```
 
+![](./example/demo/demo.gif)
+
 # Development
 
 - Run `go generate ./manifest` if the schemas have been updated.

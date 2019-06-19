@@ -14,5 +14,5 @@ build-all:
 
 .PHONY: build-target
 build-target:
-	@mkdir -p .build/$(GOOS)/$(GOARCH)
-	go build -o .build/$(GOOS)/$(GOARCH)/$(progname) -ldflags '-s -w' .
+	@mkdir -p .build/$(GOOS)-$(GOARCH)
+	go build -o .build/$(GOOS)-$(GOARCH)/$(progname) -ldflags '-s -w' .

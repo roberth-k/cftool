@@ -29,7 +29,7 @@ cftool ("CloudFormation Tool") is a boring command-line program for working with
 
 ```bash
 $ cftool --help
-$ cftool --profile MyCompany update -t MyTemplate.yml -p MyParameters.json -n my-stack
+$ cftool --profile MyCompany update --template template.yml --parameter-file params.json --stack-name my-stack --diff
 ```
 
 ![](./example/demo/demo.gif)

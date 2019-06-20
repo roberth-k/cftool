@@ -18,6 +18,7 @@ items:
 var manifestSchema = []byte(`
 $schema: "http://json-schema.org/draft-07/schema#"
 type: object
+additionalProperties: false
 required:
   - Version
 properties:
@@ -33,6 +34,7 @@ properties:
     type: array
     items:
       type: object
+      additionalProperties: false
       required:
         - Label
       properties:
@@ -48,6 +50,7 @@ properties:
     type: array
     items:
       type: object
+      additionalProperties: false
       required:
         - Label
       properties:
@@ -69,12 +72,14 @@ definitions:
   Parameter:
     $oneOf:
       - type: object
+        additionalProperties: false
         required:
           - File
         properties:
           File:
             type: string
       - type: object
+        additionalProperties: false
         required:
           - Key
           - Value
@@ -86,6 +91,7 @@ definitions:
 
   Stack:
     type: object
+    additionalProperties: false
     properties:
       AccountId:
         type: string
@@ -104,6 +110,7 @@ definitions:
 
   Target:
     type: object
+    additonalProperties: false
     required:
       - Tenant
     properties:

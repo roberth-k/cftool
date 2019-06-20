@@ -160,7 +160,7 @@ func (prog *Program) Deploy(args []string) error {
 		return errors.Wrap(err, "chdir")
 	}
 
-	deployment, ok, err := m.FindDeployment(d.Stack, d.Tenant)
+	deployment, ok, err := m.FindDeployment(d.Tenant, d.Stack)
 	deployments := []*manifest.Deployment{}
 	if ok {
 		deployments = append(deployments, deployment)

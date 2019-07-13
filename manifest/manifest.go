@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"github.com/tetratom/cftool/pkg/cftool"
 	"io/ioutil"
 	"strings"
 	"text/template"
@@ -123,7 +124,7 @@ func (m *Manifest) Deployment(
 	tenant *Tenant,
 	stack *Stack,
 	target *Target,
-) (result *Deployment, err error) {
+) (result *cftool.Deployment, err error) {
 	def := Defaults{}.
 		MergeFrom(m.Global.Default).
 		MergeFrom(tenant.Default).
@@ -131,7 +132,7 @@ func (m *Manifest) Deployment(
 		MergeFrom(target.Override)
 
 	// set up the initial values
-	d := Deployment{
+	d := cftool.Deployment{
 		TenantLabel: tenant.Label,
 		StackLabel:  stack.Label,
 	}
@@ -219,7 +220,7 @@ func (m *Manifest) Deployment(
 	return &d, nil
 }
 
-func (m *Manifest) FindDeployment(tenantLabel string, stackLabel string) (*Deployment, bool, error) {
+func (m *Manifest) FindDeployment(tenantLabel string, stackLabel string) (*cftool.Deployment, bool, error) {
 	var tenant *Tenant
 	for _, t := range m.Tenants {
 		if t.Label == tenantLabel {

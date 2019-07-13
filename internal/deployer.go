@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/pmezard/go-difflib/difflib"
-	"github.com/tetratom/cftool/manifest"
+	"github.com/tetratom/cftool/pkg/cftool"
 	"github.com/tetratom/cftool/pprint"
 	"io"
 	"strings"
@@ -34,14 +34,14 @@ func (status StackStatus) IsTerminal() bool {
 }
 
 type Deployer struct {
-	*manifest.Deployment
+	*cftool.Deployment
 	sess          *session.Session
 	client        *cf.CloudFormation
 	ChangeSetName string
 	ShowDiff      bool
 }
 
-func NewDeployer(awsopts *AWSOptions, d *manifest.Deployment) (*Deployer, error) {
+func NewDeployer(awsopts *AWSOptions, d *cftool.Deployment) (*Deployer, error) {
 	opts := session.Options{}
 
 	// Load configuration from ~/.aws/config.

@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/pkg/errors"
 	"github.com/tetratom/cftool/internal"
-	"github.com/tetratom/cftool/manifest"
+	"github.com/tetratom/cftool/pkg/cftool"
 	"log"
 	"os"
 	"strings"
@@ -16,7 +16,7 @@ func (prog *Program) Whoami(args []string) error {
 		os.Exit(1)
 	}
 
-	decision := manifest.Deployment{}
+	decision := cftool.Deployment{}
 	deployer, err := internal.NewDeployer(&prog.AWS, &decision)
 	if err != nil {
 		return errors.Wrap(err, "new deployer")

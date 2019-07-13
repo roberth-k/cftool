@@ -1,4 +1,4 @@
-package manifest
+package cftool
 
 type Deployment struct {
 	TenantLabel  string

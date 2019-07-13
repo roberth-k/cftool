@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tetratom/cftool/internal"
 	"github.com/tetratom/cftool/manifest"
+	"github.com/tetratom/cftool/pkg/cftool"
 	"github.com/tetratom/cftool/pprint"
 	"log"
 	"os"
@@ -161,7 +162,7 @@ func (prog *Program) Deploy(args []string) error {
 	}
 
 	deployment, ok, err := m.FindDeployment(d.Tenant, d.Stack)
-	deployments := []*manifest.Deployment{}
+	deployments := []*cftool.Deployment{}
 	if ok {
 		deployments = append(deployments, deployment)
 	}

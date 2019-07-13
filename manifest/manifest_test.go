@@ -3,6 +3,7 @@ package manifest
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tetratom/cftool/pkg/cftool"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -22,13 +23,13 @@ func TestManifest_FindDeployment(t *testing.T) {
 		File        string
 		TenantLabel string
 		StackLabel  string
-		Expect      *Deployment
+		Expect      *cftool.Deployment
 	}{
 		{
 			File:        "testdata/mystack-manifest.yml",
 			TenantLabel: "test",
 			StackLabel:  "mystack",
-			Expect: &Deployment{
+			Expect: &cftool.Deployment{
 				AccountId: "222222222222",
 				Parameters: map[string]string{
 					"Foo":         "Bar",
@@ -56,7 +57,7 @@ func TestManifest_FindDeployment(t *testing.T) {
 			File:        "testdata/mystack-manifest.yml",
 			TenantLabel: "live-us",
 			StackLabel:  "mystack",
-			Expect: &Deployment{
+			Expect: &cftool.Deployment{
 				AccountId: "111111111111",
 				Parameters: map[string]string{
 					"Foo":         "Bax",

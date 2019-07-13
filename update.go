@@ -5,6 +5,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tetratom/cftool/internal"
 	"github.com/tetratom/cftool/manifest"
+	"github.com/tetratom/cftool/pkg/cftool"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -64,7 +65,7 @@ func (prog *Program) Update(args []string) error {
 		return errors.Wrapf(err, "read %s", update.TemplateFile)
 	}
 
-	decision := manifest.Deployment{
+	decision := cftool.Deployment{
 		AccountId:    "",
 		Region:       "",
 		TemplateBody: templateBody,

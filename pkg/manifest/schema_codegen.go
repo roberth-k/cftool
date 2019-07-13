@@ -1,6 +1,6 @@
 // +build codegen
 
-package main
+package manifest
 
 import (
 	"fmt"

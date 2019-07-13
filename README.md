@@ -121,7 +121,7 @@ A manifest file (`.cftool.yml`) is a cookbook for setting up and updating stacks
 
 It broadly consists of two major sections: (1) tenants; and (2) stacks. By running `cftool deploy -t TENANT -s STACK`, the tenant and stack settings are merged together to form a _deployment_, which describes the template, parameter files, name, region, and other properties of a stack. This allows you to make use of a standard structure and vocabulary when initiating stack changes, and can be used to smooth out irritating inconsistencies (e.g. differences in naming convention for the same stack in different regions).
 
-Here is an example manifest. The full structure is defined in JSON Schema form by [manifest/schemas/manifest.yml](./manifest/schemas/manifest.yml).
+Here is an example manifest. The full structure is defined in JSON Schema form by [manifest/schemas/manifest.yml](pkg/manifest/schemas/manifest.yml).
 
 ```yaml
 AccountId: "111111111111" # Supports template.
@@ -209,4 +209,4 @@ type Template struct {
 }
 ```
 
-More examples can be found in the [manifest/testdata](manifest/testdata) directory. Note that a templated value will have to be surrounded by quotation marks to de-conflict YAML.
+More examples can be found in the [manifest/testdata](pkg/manifest/testdata) directory. Note that a templated value will have to be surrounded by quotation marks to de-conflict YAML.

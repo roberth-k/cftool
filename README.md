@@ -1,7 +1,5 @@
-cftool
-===
-
-[![CircleCI](https://circleci.com/gh/tetratom/cftool.svg?style=svg)](https://circleci.com/gh/tetratom/cftool)
+cftool [![CircleCI](https://circleci.com/gh/tetratom/cftool.svg?style=svg)](https://circleci.com/gh/tetratom/cftool)
+======
 
 cftool ("CloudFormation Tool") is a boring command-line program for working with CloudFormation. It is mainly a tool for reviewing change sets, as well as monitoring the progression of a stack update from the command line. **It works with any existing CloudFormation templates, and does not apply nor require any preprocessing of its own.**
 

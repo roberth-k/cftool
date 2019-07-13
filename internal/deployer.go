@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/tetratom/cftool/pkg/cftool"
-	"github.com/tetratom/cftool/pprint"
+	"github.com/tetratom/cftool/pkg/pprint"
 	"io"
 	"strings"
 	"time"

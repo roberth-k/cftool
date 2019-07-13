@@ -7,7 +7,7 @@ import (
 	"github.com/tetratom/cftool/internal"
 	"github.com/tetratom/cftool/pkg/cftool"
 	"github.com/tetratom/cftool/pkg/manifest"
-	"github.com/tetratom/cftool/pprint"
+	"github.com/tetratom/cftool/pkg/pprint"
 	"log"
 	"os"
 	"path/filepath"

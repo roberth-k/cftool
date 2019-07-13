@@ -6,7 +6,7 @@ import (
 	"github.com/pborman/getopt/v2"
 	"github.com/pkg/errors"
 	"github.com/tetratom/cftool/internal"
-	"github.com/tetratom/cftool/pprint"
+	"github.com/tetratom/cftool/pkg/pprint"
 	"os"
 	"runtime"
 	"runtime/debug"

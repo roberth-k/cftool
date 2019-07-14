@@ -2,10 +2,13 @@ package cli
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/cloudformation/cloudformationiface"
+	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/pborman/getopt/v2"
 	"github.com/pkg/errors"
 	"github.com/tetratom/cftool/internal"
@@ -23,30 +26,69 @@ type AWSOptions struct {
 	Profile  string
 	Region   string
 	Endpoint string
+
+	sess *session.Session
+	cfn  cloudformationiface.CloudFormationAPI
+	sts  stsiface.STSAPI
+}
+
+func (awsOpts *AWSOptions) Session() (*session.Session, error) {
+	if awsOpts.sess == nil {
+		opts := session.Options{}
+		opts.SharedConfigState = session.SharedConfigEnable
+		opts.AssumeRoleTokenProvider = stscreds.StdinTokenProvider
+
+		if awsOpts.Profile != "" {
+			opts.Profile = awsOpts.Profile
+		}
+
+		sess, err := session.NewSessionWithOptions(opts)
+		if err != nil {
+			return nil, errors.Wrap(err, "create aws session")
+		}
+
+		creds, err := internal.WrapCredentialsWithCache(opts.Profile, sess.Config.Credentials)
+		if err != nil {
+			return nil, errors.Wrap(err, "credential cache")
+		}
+
+		sess.Config.Credentials = creds
+
+		awsOpts.sess = sess
+	}
+
+	return awsOpts.sess, nil
 }
 
 func (awsOpts *AWSOptions) CloudFormationClient() (cloudformationiface.CloudFormationAPI, error) {
-	opts := session.Options{}
-	opts.SharedConfigState = session.SharedConfigEnable
-	opts.AssumeRoleTokenProvider = stscreds.StdinTokenProvider
+	if awsOpts.cfn == nil {
+		sess, err := awsOpts.Session()
+		if err != nil {
+			return nil, err
+		}
 
-	if awsOpts.Profile != "" {
-		opts.Profile = awsOpts.Profile
+		var config []*aws.Config
+		if awsOpts.Endpoint != "" {
+			config = append(config, &aws.Config{Endpoint: &awsOpts.Endpoint})
+		}
+
+		awsOpts.cfn = cloudformation.New(sess, config...)
 	}
 
-	sess, err := session.NewSessionWithOptions(opts)
-	if err != nil {
-		return nil, errors.Wrap(err, "create aws session")
+	return awsOpts.cfn, nil
+}
+
+func (awsOpts *AWSOptions) STSClient() (stsiface.STSAPI, error) {
+	if awsOpts.sts == nil {
+		sess, err := awsOpts.Session()
+		if err != nil {
+			return nil, err
+		}
+
+		awsOpts.sts = sts.New(sess)
 	}
 
-	creds, err := internal.WrapCredentialsWithCache(opts.Profile, sess.Config.Credentials)
-	if err != nil {
-		return nil, errors.Wrap(err, "credential cache")
-	}
-
-	sess.Config.Credentials = creds
-
-	return cloudformation.New(sess), nil
+	return awsOpts.sts, nil
 }
 
 func ParseGlobalOptions(args []string) GlobalOptions {

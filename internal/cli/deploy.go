@@ -19,6 +19,11 @@ func Deploy(c context.Context, globalOpts GlobalOptions, deployOpts DeployOption
 		return
 	}
 
+	stsapi, err := globalOpts.AWS.STSClient()
+	if err != nil {
+		return err
+	}
+
 	manifestPath := deployOpts.ManifestFile
 	if manifestPath == "" {
 		cwd, err := os.Getwd()
@@ -59,13 +64,15 @@ func Deploy(c context.Context, globalOpts GlobalOptions, deployOpts DeployOption
 		deployer := internal.NewDeployer(api, deployment)
 		deployer.ShowDiff = deployOpts.ShowDiff
 
-		if i == 0 {
-			if _, err := deployer.Whoami(color.Output); err != nil {
-				return err
-			}
+		id, err := deployer.Whoami(color.Output, stsapi)
+		if err != nil {
+			return err
 		}
 
-		// todo: check account and region match
+		if deployment.AccountId != "" && deployment.AccountId != *id.Account {
+			fmt.Fprintf(color.Output, "\nTenant account mismatch. Has the correct profile been selected?\n")
+			os.Exit(1)
+		}
 
 		if !deployment.Protected && !deployOpts.Yes {
 			deployment.Protected = true

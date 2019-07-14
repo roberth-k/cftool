@@ -43,9 +43,14 @@ func Update(c context.Context, globalOpts GlobalOptions, updateOpts UpdateOption
 	}
 
 	deployer := internal.NewDeployer(api, &deployment)
-	deployer.ShowDiff = updateOpts.ShowDiff // todo: xxx
+	deployer.ShowDiff = updateOpts.ShowDiff
 
-	if _, err := deployer.Whoami(color.Output); err != nil {
+	stsapi, err := globalOpts.AWS.STSClient()
+	if err != nil {
+		return err
+	}
+
+	if _, err := deployer.Whoami(color.Output, stsapi); err != nil {
 		return err
 	}
 

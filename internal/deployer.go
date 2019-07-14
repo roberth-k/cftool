@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	cf "github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/cloudformation/cloudformationiface"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -35,51 +36,16 @@ func (status StackStatus) IsTerminal() bool {
 
 type Deployer struct {
 	*cftool.Deployment
-	sess          *session.Session
-	client        *cf.CloudFormation
+	client        cloudformationiface.CloudFormationAPI
 	ChangeSetName string
 	ShowDiff      bool
 }
 
-func NewDeployer(awsopts *AWSOptions, d *cftool.Deployment) (*Deployer, error) {
-	opts := session.Options{}
-
-	// Load configuration from ~/.aws/config.
-	opts.SharedConfigState = session.SharedConfigEnable
-
-	// Allow MFA code entry via standard input.
-	opts.AssumeRoleTokenProvider = stscreds.StdinTokenProvider
-
-	if awsopts.Profile != "" {
-		opts.Profile = awsopts.Profile
+func NewDeployer(api cloudformationiface.CloudFormationAPI, d *cftool.Deployment) *Deployer {
+	return &Deployer{
+		Deployment: d,
+		client:     api,
 	}
-
-	switch {
-	case awsopts.Region != "":
-		opts.Config.Region = aws.String(awsopts.Region)
-	case d.Region != "":
-		opts.Config.Region = aws.String(d.Region)
-	}
-
-	if awsopts.Endpoint != "" {
-		opts.Config.Endpoint = aws.String(awsopts.Endpoint)
-	}
-
-	sess, err := session.NewSessionWithOptions(opts)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "create aws session")
-	}
-
-	creds, err := WrapCredentialsWithCache(
-		opts.Profile,
-		sess.Config.Credentials)
-
-	sess.Config.Credentials = creds
-
-	client := cf.New(sess)
-
-	return &Deployer{Deployment: d, sess: sess, client: client}, nil
 }
 
 func (d *Deployer) Deploy(w io.Writer) error {

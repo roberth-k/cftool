@@ -14,8 +14,6 @@ import (
 )
 
 func Deploy(c context.Context, globalOpts GlobalOptions, deployOpts DeployOptions) (err error) {
-	// todo: show whoami
-
 	api, err := globalOpts.AWS.CloudFormationClient()
 	if err != nil {
 		return
@@ -51,20 +49,25 @@ func Deploy(c context.Context, globalOpts GlobalOptions, deployOpts DeployOption
 	for i, deployment := range deployments {
 		if i > 0 {
 			fmt.Fprint(color.Output, "\n")
+		}
 
-			deployer := internal.NewDeployer(api, deployment)
-			deployer.ShowDiff = deployOpts.ShowDiff
+		deployer := internal.NewDeployer(api, deployment)
+		deployer.ShowDiff = deployOpts.ShowDiff
 
-			// todo: show whoami
-			// todo: check account and region match
-
-			if !deployment.Protected && !deployOpts.Yes {
-				deployment.Protected = true
+		if i == 0 {
+			if _, err := deployer.Whoami(color.Output); err != nil {
+				return err
 			}
+		}
 
-			if err = deployer.Deploy(color.Output); err != nil {
-				return errors.Wrapf(err, "deploy stack: %s", deployment.StackName)
-			}
+		// todo: check account and region match
+
+		if !deployment.Protected && !deployOpts.Yes {
+			deployment.Protected = true
+		}
+
+		if err = deployer.Deploy(color.Output); err != nil {
+			return errors.Wrapf(err, "deploy stack: %s", deployment.StackName)
 		}
 	}
 

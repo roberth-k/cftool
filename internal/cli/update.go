@@ -13,8 +13,6 @@ import (
 )
 
 func Update(c context.Context, globalOpts GlobalOptions, updateOpts UpdateOptions) (err error) {
-	// todo: show whoami
-
 	api, err := globalOpts.AWS.CloudFormationClient()
 	if err != nil {
 		return
@@ -46,6 +44,10 @@ func Update(c context.Context, globalOpts GlobalOptions, updateOpts UpdateOption
 
 	deployer := internal.NewDeployer(api, &deployment)
 	deployer.ShowDiff = updateOpts.ShowDiff // todo: xxx
+
+	if _, err := deployer.Whoami(color.Output); err != nil {
+		return err
+	}
 
 	if err = deployer.Deploy(color.Output); err != nil {
 		return errors.Wrapf(err, "deploy stack: %s", stackName)

@@ -12,3 +12,7 @@ type Deployment struct {
 	TemplateBody []byte
 	Parameters   map[string]string
 }
+
+type Parameters map[string]string
+
+type StackName string

@@ -21,9 +21,14 @@ func Deploy(c context.Context, globalOpts GlobalOptions, deployOpts DeployOption
 
 	manifestPath := deployOpts.ManifestFile
 	if manifestPath == "" {
-		manifestPath, err = findManifest()
+		cwd, err := os.Getwd()
 		if err != nil {
-			return
+			return err
+		}
+
+		manifestPath, err = findManifest(cwd)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -74,6 +79,46 @@ func Deploy(c context.Context, globalOpts GlobalOptions, deployOpts DeployOption
 	return nil
 }
 
-func findManifest() (string, error) {
-	panic("not implemented")
+func findManifest(startdir string) (result string, err error) {
+	manifestName := ".cftool.yml"
+
+	lastpath := ""
+	reldir := ""
+	for {
+		newpath := filepath.Join(startdir, reldir, manifestName)
+
+		if newpath == lastpath {
+			// went all the way up to the root directory
+			break
+		}
+
+		lastpath = newpath
+
+		ok, err := fileExists(newpath)
+		if err != nil {
+			return "", err
+		}
+
+		if ok {
+			return newpath, nil
+		}
+
+		reldir = filepath.Join(reldir, "..")
+	}
+
+	return "", errors.Errorf("manifest %s not found in any enclosing directory", manifestName)
+}
+
+func fileExists(path string) (ok bool, err error) {
+	_, err = os.Stat(path)
+
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }

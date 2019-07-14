@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws/session"
 	cf "github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/cloudformation/cloudformationiface"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -336,14 +334,15 @@ func (d *Deployer) monitorStackUpdate(w io.Writer, startTime time.Time) (stack *
 }
 
 func (d *Deployer) Whoami(w io.Writer) (*sts.GetCallerIdentityOutput, error) {
-	client := sts.New(d.sess)
-	id, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
-	if err != nil {
-		return nil, err
-	}
-
-	pprint.Whoami(w, d.sess.Config.Region, id)
-	return id, nil
+	panic("not implemented")
+	//client := sts.New(d.sess)
+	//id, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//pprint.Whoami(w, d.sess.Config.Region, id)
+	//return id, nil
 }
 
 func (d *Deployer) TemplateDiff(w io.Writer) error {

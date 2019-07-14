@@ -2,13 +2,18 @@ package cli
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/cloudformation/cloudformationiface"
 	"github.com/pborman/getopt/v2"
+	"github.com/pkg/errors"
+	"github.com/tetratom/cftool/internal"
 	"os"
 )
 
 type GlobalOptions struct {
 	AWS           AWSOptions
-	Verbose       bool
 	Color         bool
 	Version       bool
 	remainingArgs []string
@@ -20,6 +25,30 @@ type AWSOptions struct {
 	Endpoint string
 }
 
+func (awsOpts *AWSOptions) CloudFormationClient() (cloudformationiface.CloudFormationAPI, error) {
+	opts := session.Options{}
+	opts.SharedConfigState = session.SharedConfigEnable
+	opts.AssumeRoleTokenProvider = stscreds.StdinTokenProvider
+
+	if awsOpts.Profile != "" {
+		opts.Profile = awsOpts.Profile
+	}
+
+	sess, err := session.NewSessionWithOptions(opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "create aws session")
+	}
+
+	creds, err := internal.WrapCredentialsWithCache(opts.Profile, sess.Config.Credentials)
+	if err != nil {
+		return nil, errors.Wrap(err, "credential cache")
+	}
+
+	sess.Config.Credentials = creds
+
+	return cloudformation.New(sess), nil
+}
+
 func ParseGlobalOptions(args []string) GlobalOptions {
 	var options GlobalOptions
 
@@ -27,7 +56,6 @@ func ParseGlobalOptions(args []string) GlobalOptions {
 	flags.FlagLong(&options.AWS.Region, "region", 'r', "AWS region")
 	flags.FlagLong(&options.AWS.Profile, "profile", 'p', "AWS credential profile")
 	flags.FlagLong(&options.AWS.Endpoint, "endpoint", 'e', "AWS API endpoint")
-	flags.FlagLong(&options.Verbose, "verbose", 'v', "enable verbose output")
 
 	color := flags.EnumLong(
 		"color", 'c', []string{"on", "off"}, "on",

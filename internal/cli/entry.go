@@ -13,7 +13,7 @@ import (
 	"runtime/debug"
 )
 
-var gitVersion = ""
+var gitVersion string
 
 func Entry(c context.Context, args []string) error {
 	options := ParseGlobalOptions(args)

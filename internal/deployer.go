@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
@@ -48,7 +49,7 @@ func NewDeployer(api cloudformationiface.CloudFormationAPI, d *cftool.Deployment
 	}
 }
 
-func (d *Deployer) Deploy(w io.Writer) error {
+func (d *Deployer) Deploy(c context.Context, w io.Writer) error {
 	pprint.Field(w, "StackName", d.StackName)
 
 	exists, err := d.stackExists()

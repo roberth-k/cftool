@@ -66,7 +66,7 @@ func Deploy(c context.Context, globalOpts GlobalOptions, deployOpts DeployOption
 			deployment.Protected = true
 		}
 
-		if err = deployer.Deploy(color.Output); err != nil {
+		if err = deployer.Deploy(c, color.Output); err != nil {
 			return errors.Wrapf(err, "deploy stack: %s", deployment.StackName)
 		}
 	}

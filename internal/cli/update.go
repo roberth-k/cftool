@@ -49,7 +49,7 @@ func Update(c context.Context, globalOpts GlobalOptions, updateOpts UpdateOption
 		return err
 	}
 
-	if err = deployer.Deploy(color.Output); err != nil {
+	if err = deployer.Deploy(c, color.Output); err != nil {
 		return errors.Wrapf(err, "deploy stack: %s", stackName)
 	}
 

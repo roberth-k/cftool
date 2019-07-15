@@ -39,9 +39,9 @@ func Entry(c context.Context, args []string) error {
 	var err error
 	switch subcommand := options.remainingArgs[0]; subcommand {
 	case "deploy":
-		err = Deploy(c, options, ParseDeployOptions(options.remainingArgs[1:]))
+		err = Deploy(c, options, ParseDeployOptions(options.remainingArgs))
 	case "update":
-		err = Update(c, options, ParseUpdateOptions(options.remainingArgs[1:]))
+		err = Update(c, options, ParseUpdateOptions(options.remainingArgs))
 	default:
 		// todo: where to output to?
 		fmt.Fprintf(color.Output, "\nUnrecognized subcommand: %s\n", subcommand)

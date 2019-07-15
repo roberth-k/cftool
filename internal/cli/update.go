@@ -66,18 +66,18 @@ func deriveStackName(opts UpdateOptions) (cftool.StackName, error) {
 		return cftool.StackName(opts.StackName), nil
 	}
 
-	list := []struct {
-		names []string
-	}{
-		{opts.ParameterFiles},
-		{[]string{opts.TemplateFile}},
+	lists := [][]string{
+		opts.ParameterFiles,
+		{opts.TemplateFile},
 	}
 
-	for _, element := range list {
-		if len(element.names) > 0 {
-			basename := filepath.Base(opts.ParameterFiles[0])
-			return cftool.StackName(strings.Split(basename, ".")[0]), nil
+	for _, list := range lists {
+		if len(list) == 0 {
+			continue
 		}
+
+		basename := filepath.Base(list[0])
+		return cftool.StackName(strings.Split(basename, ".")[0]), nil
 	}
 
 	return "", errors.New("unable to derive stack name")

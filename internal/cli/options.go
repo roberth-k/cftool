@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tetratom/cftool/internal"
 	"os"
+	"time"
 )
 
 type GlobalOptions struct {
@@ -37,6 +38,7 @@ func (awsOpts *AWSOptions) Session() (*session.Session, error) {
 		opts := session.Options{}
 		opts.SharedConfigState = session.SharedConfigEnable
 		opts.AssumeRoleTokenProvider = stscreds.StdinTokenProvider
+		opts.AssumeRoleDuration = 1 * time.Hour // todo: configurable?
 
 		if awsOpts.Profile != "" {
 			opts.Profile = awsOpts.Profile

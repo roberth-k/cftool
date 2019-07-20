@@ -13,7 +13,7 @@ import (
 )
 
 func Update(c context.Context, globalOpts GlobalOptions, updateOpts UpdateOptions) (err error) {
-	api, err := globalOpts.AWS.CloudFormationClient()
+	api, err := globalOpts.AWS.CloudFormationClient("")
 	if err != nil {
 		return
 	}

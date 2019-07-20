@@ -14,11 +14,6 @@ import (
 )
 
 func Deploy(c context.Context, globalOpts GlobalOptions, deployOpts DeployOptions) (err error) {
-	api, err := globalOpts.AWS.CloudFormationClient()
-	if err != nil {
-		return
-	}
-
 	stsapi, err := globalOpts.AWS.STSClient()
 	if err != nil {
 		return err
@@ -59,6 +54,11 @@ func Deploy(c context.Context, globalOpts GlobalOptions, deployOpts DeployOption
 	for i, deployment := range deployments {
 		if i > 0 {
 			fmt.Fprint(color.Output, "\n")
+		}
+
+		api, err := globalOpts.AWS.CloudFormationClient(deployment.Region)
+		if err != nil {
+			return err
 		}
 
 		deployer := internal.NewDeployer(api, deployment)

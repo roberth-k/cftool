@@ -62,7 +62,7 @@ func (awsOpts *AWSOptions) Session() (*session.Session, error) {
 	return awsOpts.sess, nil
 }
 
-func (awsOpts *AWSOptions) CloudFormationClient() (cloudformationiface.CloudFormationAPI, error) {
+func (awsOpts *AWSOptions) CloudFormationClient(region string) (cloudformationiface.CloudFormationAPI, error) {
 	if awsOpts.cfn == nil {
 		sess, err := awsOpts.Session()
 		if err != nil {
@@ -72,6 +72,10 @@ func (awsOpts *AWSOptions) CloudFormationClient() (cloudformationiface.CloudForm
 		var config []*aws.Config
 		if awsOpts.Endpoint != "" {
 			config = append(config, &aws.Config{Endpoint: &awsOpts.Endpoint})
+		}
+
+		if region != "" {
+			config = append(config, &aws.Config{Region: &region})
 		}
 
 		awsOpts.cfn = cloudformation.New(sess, config...)

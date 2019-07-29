@@ -44,6 +44,10 @@ func (awsOpts *AWSOptions) Session() (*session.Session, error) {
 			opts.Profile = awsOpts.Profile
 		}
 
+		if awsOpts.Region != "" {
+			opts.Config.Region = aws.String(awsOpts.Region)
+		}
+
 		sess, err := session.NewSessionWithOptions(opts)
 		if err != nil {
 			return nil, errors.Wrap(err, "create aws session")

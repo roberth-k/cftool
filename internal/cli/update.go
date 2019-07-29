@@ -2,6 +2,8 @@ package cli
 
 import (
 	"context"
+	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/cloudformation/cloudformationiface"
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"github.com/tetratom/cftool/internal"
@@ -11,6 +13,10 @@ import (
 	"path/filepath"
 	"strings"
 )
+
+func getRegion(api cloudformationiface.CloudFormationAPI) string {
+	return *api.(*cloudformation.CloudFormation).Config.Region
+}
 
 func Update(c context.Context, globalOpts GlobalOptions, updateOpts UpdateOptions) (err error) {
 	api, err := globalOpts.AWS.CloudFormationClient("")
@@ -50,7 +56,7 @@ func Update(c context.Context, globalOpts GlobalOptions, updateOpts UpdateOption
 		return err
 	}
 
-	if _, err := deployer.Whoami(color.Output, stsapi); err != nil {
+	if _, err := deployer.Whoami(color.Output, stsapi, getRegion(api)); err != nil {
 		return err
 	}
 

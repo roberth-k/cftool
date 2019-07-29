@@ -334,7 +334,7 @@ func (d *Deployer) monitorStackUpdate(w io.Writer, startTime time.Time) (stack *
 	return stack, err
 }
 
-func (d *Deployer) Whoami(w io.Writer, api stsiface.STSAPI) (*sts.GetCallerIdentityOutput, error) {
+func (d *Deployer) Whoami(w io.Writer, api stsiface.STSAPI, region string) (*sts.GetCallerIdentityOutput, error) {
 	// todo: replace this with something better
 
 	id, err := api.GetCallerIdentity(&sts.GetCallerIdentityInput{})
@@ -342,7 +342,7 @@ func (d *Deployer) Whoami(w io.Writer, api stsiface.STSAPI) (*sts.GetCallerIdent
 		return nil, err
 	}
 
-	pprint.Whoami(w, api.(*sts.STS).Config.Region, id)
+	pprint.Whoami(w, &region, id)
 	return id, nil
 }
 

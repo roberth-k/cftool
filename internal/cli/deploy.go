@@ -64,7 +64,7 @@ func Deploy(c context.Context, globalOpts GlobalOptions, deployOpts DeployOption
 		deployer := internal.NewDeployer(api, deployment)
 		deployer.ShowDiff = deployOpts.ShowDiff
 
-		id, err := deployer.Whoami(color.Output, stsapi)
+		id, err := deployer.Whoami(color.Output, stsapi, getRegion(api))
 		if err != nil {
 			return err
 		}

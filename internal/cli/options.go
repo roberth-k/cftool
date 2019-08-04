@@ -108,20 +108,20 @@ func ParseGlobalOptions(args []string) GlobalOptions {
 	flags.FlagLong(&options.AWS.Region, "region", 'r', "AWS region")
 	flags.FlagLong(&options.AWS.Profile, "profile", 'p', "AWS credential profile")
 	flags.FlagLong(&options.AWS.Endpoint, "endpoint", 'e', "AWS API endpoint")
-
+	showHelp := flags.BoolLong("help", 'h', "show usage and exit")
 	color := flags.EnumLong(
 		"color", 'c', []string{"on", "off"}, "on",
 		"'on' or 'off'. pass 'off' to disable colors.")
-
 	flags.FlagLong(&options.Version, "version", 'V', "show version and exit")
-
+	flags.SetProgram("cftool")
 	flags.Parse(args)
-
-	if color == nil || *color == "on" {
-		options.Color = true
-	}
-
+	options.Color = color == nil || *color == "on"
 	options.remainingArgs = flags.Args()
+
+	if *showHelp {
+		flags.PrintUsage(os.Stdout)
+		os.Exit(0)
+	}
 
 	return options
 }
@@ -143,16 +143,21 @@ func ParseDeployOptions(args []string) DeployOptions {
 	flags.FlagLong(&options.Stack, "stack", 's', "stack to deploy")
 	flags.FlagLong(&options.Tenant, "tenant", 't', "tenant to deploy for")
 	showDiff := flags.BoolLong("diff", 'd', "show template diff when updating a stack")
+	showHelp := flags.BoolLong("help", 'h', "show usage and exit")
+	flags.SetProgram("cftool [options ...] deploy")
 	flags.Parse(args)
+	options.ShowDiff = *showDiff
 	rest := flags.Args()
 
 	if len(rest) != 0 {
-		fmt.Printf("Did not expect positional parameters.\n")
+		fmt.Printf("error: did not expect positional parameters.\n")
+		flags.PrintUsage(os.Stdout)
 		os.Exit(1)
 	}
 
-	if showDiff != nil && *showDiff {
-		options.ShowDiff = true
+	if *showHelp {
+		flags.PrintUsage(os.Stdout)
+		os.Exit(0)
 	}
 
 	return options
@@ -177,10 +182,21 @@ func ParseUpdateOptions(args []string) UpdateOptions {
 	flags.FlagLong(&options.StackName, "stack-name", 'n', "override inferrred stack name")
 	flags.FlagLong(&options.TemplateFile, "template-file", 't', "template file")
 	showDiff := flags.BoolLong("diff", 'd', "show template diff when updating a stack")
+	showHelp := flags.BoolLong("help", 'h', "show usage and exit")
+	flags.SetProgram("cftool [options ...] update")
 	flags.Parse(args)
+	options.ShowDiff = *showDiff
+	rest := flags.Args()
 
-	if showDiff != nil && *showDiff {
-		options.ShowDiff = true
+	if len(rest) != 0 {
+		fmt.Print("error: did not expect positional parameters\n")
+		flags.PrintUsage(os.Stdout)
+		os.Exit(1)
+	}
+
+	if *showHelp {
+		flags.PrintUsage(os.Stdout)
+		os.Exit(0)
 	}
 
 	return options

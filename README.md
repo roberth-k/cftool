@@ -122,17 +122,6 @@ It broadly consists of two major sections: (1) tenants; and (2) stacks. By runni
 Here is an example manifest. The full structure is defined in JSON Schema form by [manifest/schemas/manifest.yml](pkg/manifest/schemas/manifest.yml).
 
 ```yaml
-AccountId: "111111111111" # Supports template.
-Parameters:
-  - File: "stack-parameters.json" # Supports template.
-  - File: "stack-parameters.yml"
-  - Key: ExampleKey
-    Value: "ExampleValue" # Supports template.
-Protected: false
-Region: eu-west-1 # Supports template.
-StackName: "my-stack" # Supports template.
-Template: "my-template.yml" # Supports template.
-
 Version: "1.1"
 
 Global:
